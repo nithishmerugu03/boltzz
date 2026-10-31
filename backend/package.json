@@ -1,11 +1,13 @@
 {
   "name": "aegisops-backend",
   "private": true,
+  "version": "0.1.0",
   "type": "module",
+  "main": "src/server.js",
   "scripts": {
-    "test": "node --test",
-    "dev": "nodemon src/server.js",
     "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "node --test",
     "evaluate:rca": "node scripts/evaluateRca.js"
   },
   "dependencies": {

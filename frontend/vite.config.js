@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+// Tailwind is applied through PostCSS (postcss.config.js + tailwind.config.js).
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -18,4 +19,3 @@ export default defineConfig({
     port: 4173,
   },
 });
-

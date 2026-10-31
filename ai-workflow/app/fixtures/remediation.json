@@ -1,0 +1,25 @@
+{
+  "incident_id": "INC-001",
+  "component": "remediation",
+  "status": "completed",
+  "timestamp": "2026-10-31T10:08:00Z",
+  "summary": "[MOCK] 3 remediation steps proposed; all require human approval. Nothing has been executed.",
+  "findings": [],
+  "evidence": [
+    {"source": "Runbook RB-DB-003", "reference": "Step 2", "content": "Inspect pool metrics and slow-query log before changing pool size.", "relevance": "Runbook basis for the proposed steps."}
+  ],
+  "recommendations": [
+    {"recommendation_id": "REC-001", "action": "Inspect checkout-service connection pool settings (max size, timeouts, leak detection)", "reason": "Pool reached 50/50 with 187 waiting requests.", "priority": "critical", "requires_approval": false},
+    {"recommendation_id": "REC-002", "action": "Review orders-db capacity and slow queries; index the slow ORDER BY on orders(created_at)", "reason": "Average query time rose from 40ms to 2.4s, holding connections longer.", "priority": "high", "requires_approval": true},
+    {"recommendation_id": "REC-003", "action": "Temporarily increase pool max size from 50 to 80 after confirming DB max_connections headroom", "reason": "Restores capacity while the query fix is validated.", "priority": "high", "requires_approval": true}
+  ],
+  "data": {
+    "mock_fixture": true,
+    "safety_checks": [
+      {"recommendation_id": "REC-002", "risk_level": "medium", "check": "Create index concurrently to avoid table lock", "passed": true},
+      {"recommendation_id": "REC-003", "risk_level": "medium", "check": "DB max_connections (200) > sum of all service pools after change (170)", "passed": true}
+    ],
+    "execution_policy": "simulation_only"
+  },
+  "error": null
+}

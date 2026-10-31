@@ -1,0 +1,32 @@
+{
+  "incident_id": "INC-001",
+  "component": "rca_security_analysis",
+  "status": "completed",
+  "timestamp": "2026-10-31T10:07:00Z",
+  "summary": "[MOCK] Probable root cause: database connection pool exhaustion in checkout-service. No security threat detected in the available evidence.",
+  "findings": [
+    {"finding_id": "FIND-RCA-001", "title": "Probable root cause: database connection pool exhaustion", "description": "All 50 pooled connections were held while 187 requests waited, causing acquisition timeouts and 503s. This is a hypothesis, not a confirmed cause; whether connections were held by slow queries or a leak is not yet established.", "severity": "critical", "confidence": 0.86}
+  ],
+  "evidence": [
+    {"source": "checkout-service.log", "reference": "Line 1042", "content": "HikariPool-1 - Connection is not available ... (total=50, active=50, idle=0, waiting=187)", "relevance": "Supports or contextualizes the probable root-cause hypothesis: database connection pool exhaustion (direct observation of a saturated pool)."},
+    {"source": "orders-db metrics", "reference": "10:00-10:05 UTC", "content": "active_connections=50 (max=50), avg query time 2.4s (baseline 40ms)", "relevance": "Supports or contextualizes the probable root-cause hypothesis: database connection pool exhaustion (slow queries hold connections longer)."}
+  ],
+  "recommendations": [
+    {"recommendation_id": "REC-RCA-001", "action": "Validate whether slow queries or a connection leak is holding pool connections.", "reason": "Confirm the hypothesis before deciding on remediation.", "priority": "high", "requires_approval": false}
+  ],
+  "data": {
+    "mock_fixture": true,
+    "probable_root_cause": "Database connection pool exhaustion in checkout-service",
+    "root_cause_category": "database",
+    "root_cause_confidence": 0.86,
+    "affected_components": ["checkout-service", "orders-db"],
+    "security_analysis": {
+      "risk_detected": false,
+      "risk_level": "low",
+      "threats": [],
+      "security_observations": ["Request volume and client distribution were within normal range; no authentication anomalies or suspicious payloads in the analysed logs."]
+    },
+    "reasoning": "Pool saturation coincides with checkout 503s and elevated query latency. Analysis mode: mock fixture."
+  },
+  "error": null
+}

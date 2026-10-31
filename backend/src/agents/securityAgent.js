@@ -3,6 +3,12 @@ import {
   normalizeIncidentEvidence,
   validateEvidenceReferences
 } from "../utils/incidentEvidence.js";
+import {
+  createFinding,
+  createModuleResponse,
+  createRecommendation,
+  toContractEvidence
+} from "../utils/agentResponse.js";
 
 const AUTH_PATTERN = /login|authenticat|credential|token|unauthorized|forbidden|(?:^|\D)401(?:\D|$)|(?:^|\D)403(?:\D|$)/i;
 const FAILED_AUTH_PATTERN = /failed.{0,30}(?:login|auth)|(?:login|auth).{0,30}(?:failed|failure)|invalid credentials|authentication denied/i;
@@ -197,58 +203,82 @@ export async function runSecurityAgent(incident) {
       AUTH_PATTERN.test(textFor(item)) ||
       [401, 403].includes(statusCodeFor(item.raw)) ||
       /request|traffic|auth|login/i.test(String(item.raw.metricName ?? item.raw.name ?? "")));
-    const status = normalized.items.length === 0 || !hasSecurityCoverage ? "DEGRADED" : "COMPLETED";
+    const coverageComplete = normalized.items.length > 0 && hasSecurityCoverage;
     const riskLevel = findings.some((finding) => finding.riskLevel === "HIGH")
       ? "HIGH"
       : findings.some((finding) => finding.riskLevel === "MEDIUM")
         ? "MEDIUM"
-        : status === "DEGRADED" ? "UNKNOWN" : "LOW";
+        : coverageComplete ? "LOW" : "UNKNOWN";
     const summary = threatDetected
       ? `${findings.length} potential security finding(s) require investigation.`
-      : status === "DEGRADED"
+      : !coverageComplete
         ? "Security analysis is incomplete because security-relevant evidence is missing."
         : "No suspicious indicator was detected in the supplied security-relevant events; this is not assurance that the service is secure.";
     const evidenceIds = [...new Set(findings.flatMap((finding) => finding.evidenceIds))];
+    const contractFindings = findings.map((finding, index) => createFinding({
+      id: `FIND-SEC-${String(index + 1).padStart(3, "0")}`,
+      title: finding.title,
+      description: [
+        finding.explanation,
+        finding.sourceIp ? `Source address observed in input: ${finding.sourceIp}.` : ""
+      ].filter(Boolean).join(" "),
+      severity: finding.riskLevel,
+      confidence: null
+    }));
+    const contractEvidence = findings.flatMap((finding) => toContractEvidence(
+      normalized.items,
+      finding.evidenceIds,
+      `Supports security finding: ${finding.title}.`
+    ));
+    const contractRecommendations = [...new Set(findings.flatMap((finding) => finding.recommendations))]
+      .map((action, index) => createRecommendation({
+        id: `REC-SEC-${String(index + 1).padStart(3, "0")}`,
+        action,
+        reason: "Investigate the cited security indicator before taking further action.",
+        priority: riskLevel.toLowerCase() === "unknown" ? "low" : riskLevel.toLowerCase()
+      }));
+    const securityObservations = findings.map((finding) => finding.explanation);
+    if (!coverageComplete) {
+      securityObservations.push("Security-relevant evidence coverage is insufficient; no assurance about the absence of threats is implied.");
+    }
 
-    return {
-      agentName: "Security",
-      status,
+    return createModuleResponse({
+      incident,
       summary,
-      evidenceIds,
-      evidence: evidenceObjectsForIds(normalized.items, evidenceIds),
-      warnings: normalized.warnings,
-      details: {
-        threatDetected,
-        riskLevel,
-        threatType: findings[0]?.category ?? null,
-        suspiciousEventCount: evidenceIds.length,
-        findings,
-        recommendations: [...new Set(findings.flatMap((finding) => finding.recommendations))],
-        coverage: {
-          evidenceItemCount: normalized.items.length,
-          securityRelevantEvidenceCount: normalized.items.filter((item) =>
-            AUTH_PATTERN.test(textFor(item)) || [401, 403].includes(statusCodeFor(item.raw))).length,
-          complete: status === "COMPLETED"
-        }
+      findings: contractFindings,
+      evidence: contractEvidence,
+      recommendations: contractRecommendations,
+      data: {
+        security_analysis: {
+          risk_detected: threatDetected,
+          risk_level: riskLevel.toLowerCase(),
+          threats: findings.map((finding) => finding.category),
+          security_observations: securityObservations
+        },
+        reasoning: `Reviewed ${normalized.items.length} evidence item(s); ${normalized.items.filter((item) =>
+          AUTH_PATTERN.test(textFor(item)) || [401, 403].includes(statusCodeFor(item.raw))).length} contained security-relevant authentication indicators.${normalized.warnings.length
+          ? ` Input notes: ${normalized.warnings.join(" ")}`
+          : ""}`
       }
-    };
+    });
   } catch (error) {
-    return {
-      agentName: "Security",
-      status: "ERROR",
+    return createModuleResponse({
+      incident,
+      status: "failed",
       summary: "Security analysis could not process the incident.",
-      evidenceIds: [],
-      evidence: [],
-      warnings: [error instanceof Error ? error.message : "Unexpected security analysis error."],
-      details: {
-        threatDetected: false,
-        riskLevel: "UNKNOWN",
-        threatType: null,
-        suspiciousEventCount: 0,
-        findings: [],
-        recommendations: [],
-        coverage: { evidenceItemCount: 0, securityRelevantEvidenceCount: 0, complete: false }
+      data: {
+        security_analysis: {
+          risk_detected: false,
+          risk_level: "unknown",
+          threats: [],
+          security_observations: []
+        }
+      },
+      error: {
+        code: "SECURITY_ANALYSIS_FAILED",
+        message: "Security analysis could not process incident evidence.",
+        details: error instanceof Error ? error.message : null
       }
-    };
+    });
   }
 }

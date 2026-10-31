@@ -1,6 +1,15 @@
 import { knownIncidents } from "../tests/fixtures/knownIncidents.js";
 import { runRcaAgent } from "../src/agents/rcaAgent.js";
 
+const categoryMap = {
+  DATABASE_CONNECTION_EXHAUSTION: "database",
+  MEMORY_EXHAUSTION: "memory",
+  AUTHENTICATION_TRAFFIC_ANOMALY: "authentication",
+  DEPENDENCY_FAILURE: "dependency",
+  POSSIBLE_DEPLOYMENT_REGRESSION: "deployment",
+  INSUFFICIENT_EVIDENCE: null
+};
+
 function sourceIds(incident) {
   return new Set(
     ["logs", "events", "parsedEvents", "correlatedEvents", "metrics", "deployments", "timeline"]
@@ -19,16 +28,16 @@ async function evaluate({ live = false } = {}) {
 
   for (const fixture of knownIncidents) {
     const result = await runRcaAgent(fixture.incident, [], { useLLM: false });
-    const correct = result.details.category === fixture.expectedCategory;
+    const correct = result.data.root_cause_category === categoryMap[fixture.expectedCategory];
     if (correct) deterministicCorrect += 1;
-    if (result.status === "ERROR") errors += 1;
+    if (result.status === "failed") errors += 1;
     const ids = sourceIds(fixture.incident);
-    const unsupported = result.evidenceIds.filter((id) => !ids.has(id));
+    const unsupported = result.evidence.map((item) => item.reference).filter((id) => !ids.has(id));
     if (unsupported.length) citationFailures += unsupported.length;
     cases.push({
       name: fixture.name,
       expected: fixture.expectedCategory,
-      predicted: result.details.category,
+      predicted: result.data.root_cause_category,
       correct,
       unsupportedEvidenceIds: unsupported
     });
@@ -57,9 +66,9 @@ async function evaluate({ live = false } = {}) {
   let degraded = 0;
   for (const fixture of knownIncidents) {
     const result = await runRcaAgent(fixture.incident);
-    if (result.details.mode === "GROQ" || result.details.mode === "GROQ_VALIDATED_WITH_WARNINGS") {
+    if (!result.summary.includes("Deterministic rule-based fallback")) {
       modelAccepted += 1;
-      if (result.details.category === fixture.expectedCategory) modelCorrect += 1;
+      if (result.data.root_cause_category === categoryMap[fixture.expectedCategory]) modelCorrect += 1;
     } else {
       degraded += 1;
     }

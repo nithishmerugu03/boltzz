@@ -17,18 +17,37 @@ function StatePanel({ kind, title, message }) {
 
 export default function RCAAnalysis({ incident = null, result = null, loading = false, error = null }) {
   if (loading) return <section className="analysis-card"><StatePanel kind="loading" title="Analyzing incident" message="Correlating source evidence and preparing RCA findings." /></section>;
-  if (error || result?.status === "ERROR") {
-    return <section className="analysis-card"><StatePanel kind="error" title="RCA analysis unavailable" message={error?.message ?? error ?? result?.warnings?.[0] ?? "The RCA agent could not analyze this incident."} /></section>;
+  if (error || result?.status === "ERROR" || result?.status === "failed") {
+    return <section className="analysis-card"><StatePanel kind="error" title="RCA analysis unavailable" message={error?.message ?? error ?? result?.error?.message ?? "The RCA agent could not analyze this incident."} /></section>;
   }
   if (!result) {
     return <section className="analysis-card"><StatePanel kind="empty" title="No investigation yet" message="RCA findings will appear here after the orchestrator submits an incident for analysis." /></section>;
   }
 
-  const details = result.details ?? {};
-  const degraded = result.status !== "COMPLETED";
-  const incidentId = incident?.incidentId ?? incident?.id;
+  const details = result.details ?? {
+    probableRootCause: result.data?.probable_root_cause,
+    explanation: result.findings?.find((finding) => finding.finding_id?.startsWith("FIND-RCA-"))?.description ?? result.data?.reasoning,
+    category: result.data?.root_cause_category,
+    evidenceSupportScore: Number.isFinite(result.data?.root_cause_confidence) ? result.data.root_cause_confidence * 100 : null,
+    scoreFactors: {},
+    validationSteps: (result.recommendations ?? []).map((item) => item.action),
+    missingEvidence: [],
+    similarIncidents: []
+  };
+  const mode = details.mode ?? (/deterministic rule-based fallback/i.test(`${result.summary} ${result.data?.reasoning}`)
+    ? "Deterministic fallback"
+    : "Analysis complete");
+  const degraded = result.status === "DEGRADED" || result.status === "in_progress";
+  const incidentId = incident?.incident_id ?? incident?.incidentId ?? incident?.id ?? result.incident_id;
   const service = incident?.service ?? incident?.serviceName;
   const severity = incident?.severity;
+  const allEvidence = result.evidence ?? [];
+  const hasContractRcaFinding = result.findings?.some((finding) =>
+    finding.finding_id?.startsWith("FIND-RCA-"));
+  const rcaEvidence = allEvidence.filter((item) =>
+    item.relevance?.includes("probable root-cause hypothesis"));
+  const evidence = hasContractRcaFinding ? rcaEvidence : allEvidence;
+  const evidenceIds = result.evidenceIds ?? evidence.map((item) => item.reference).filter(Boolean);
 
   return (
     <section className="analysis-card">
@@ -39,7 +58,7 @@ export default function RCAAnalysis({ incident = null, result = null, loading = 
         </div>
         <span className={`agent-status ${degraded ? "status-degraded" : "status-complete"}`}>
           {degraded ? <AlertCircle size={14} /> : <CheckCircle2 size={14} />}
-          {display(result.status, "UNKNOWN")}
+          {display(result.status?.toUpperCase(), "UNKNOWN")}
         </span>
       </div>
 
@@ -52,13 +71,13 @@ export default function RCAAnalysis({ incident = null, result = null, loading = 
       {degraded && (
         <div className="degraded-notice" role="status">
           <AlertCircle size={16} aria-hidden="true" />
-          <span>Partial analysis · {details.mode ?? "Fallback mode"} · verify findings before relying on them.</span>
+          <span>Partial analysis · {mode} · verify findings before relying on them.</span>
         </div>
       )}
 
       <div className="cause-block">
         <div className="cause-label"><Sparkles size={15} aria-hidden="true" /> PROBABLE ROOT CAUSE</div>
-        <h3>{display(details.probableRootCause, result.summary)}</h3>
+        <h3>{display(details.probableRootCause, result.findings?.[0]?.title ?? result.summary)}</h3>
         <p>{display(details.explanation, "No explanation was returned.")}</p>
       </div>
 
@@ -82,7 +101,7 @@ export default function RCAAnalysis({ incident = null, result = null, loading = 
         <div className="inline-notice"><Clock3 size={15} aria-hidden="true" /><span>{details.possibleTriggers.join(" ")}</span></div>
       )}
 
-      <EvidenceViewer evidence={result.evidence} referencedIds={result.evidenceIds} relatedFinding={details.probableRootCause} />
+      <EvidenceViewer evidence={evidence} referencedIds={evidenceIds} relatedFinding={details.probableRootCause} />
 
       {Array.isArray(details.similarIncidents) && details.similarIncidents.length > 0 && (
         <section className="detail-section">
@@ -102,17 +121,16 @@ export default function RCAAnalysis({ incident = null, result = null, loading = 
 
       {Array.isArray(details.validationSteps) && details.validationSteps.length > 0 && (
         <section className="detail-section">
-          <div className="section-heading"><div><p className="eyebrow">NEXT CHECKS</p><h3>Validation steps</h3></div></div>
+          <div className="section-heading"><div><p className="eyebrow">NEXT CHECKS</p><h3>Recommendations for review</h3></div></div>
           <ol className="validation-list">{details.validationSteps.map((step, index) => <li key={`${step}-${index}`}><span>{index + 1}</span>{step}</li>)}</ol>
         </section>
       )}
 
-      {(details.missingEvidence?.length > 0 || result.warnings?.length > 0 || result.unsupportedEvidenceIds?.length > 0) && (
+      {(details.missingEvidence?.length > 0 || result.warnings?.length > 0 || result.data?.reasoning) && (
         <div className="warning-list" role="status">
-          <strong><AlertCircle size={15} /> Evidence gaps and warnings</strong>
+          <strong><AlertCircle size={15} /> Analysis notes</strong>
           {[...(details.missingEvidence ?? []), ...(result.warnings ?? []),
-            ...(result.unsupportedEvidenceIds ?? []).map((id) => `Unsupported evidence reference removed: ${id}`)]
-            .map((warning, index) => <p key={`${warning}-${index}`}>{warning}</p>)}
+            result.data?.reasoning].filter(Boolean).map((warning, index) => <p key={`${warning}-${index}`}>{warning}</p>)}
         </div>
       )}
     </section>

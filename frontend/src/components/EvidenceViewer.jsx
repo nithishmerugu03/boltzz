@@ -9,14 +9,14 @@ function severityClass(value) {
 }
 
 function evidenceMessage(item) {
-  return item.message ?? item.raw?.message ?? item.description ?? item.event ?? "No message was provided for this evidence item.";
+  return item.content ?? item.message ?? item.raw?.message ?? item.description ?? item.event ?? "No message was provided for this evidence item.";
 }
 
 export default function EvidenceViewer({ evidence = [], referencedIds = [], relatedFinding = null }) {
   const [expandedIds, setExpandedIds] = useState(() => new Set());
   const available = Array.isArray(evidence) ? evidence.filter((item) => item && typeof item === "object") : [];
   const references = Array.isArray(referencedIds) ? [...new Set(referencedIds.filter(Boolean))] : [];
-  const availableIds = new Set(available.map((item) => String(item.id ?? item.evidenceId ?? "")).filter(Boolean));
+  const availableIds = new Set(available.map((item) => String(item.reference ?? item.id ?? item.evidenceId ?? "")).filter(Boolean));
   const unresolved = references.filter((id) => !availableIds.has(String(id)));
 
   function toggle(id) {
@@ -55,7 +55,8 @@ export default function EvidenceViewer({ evidence = [], referencedIds = [], rela
       ) : (
         <div className="evidence-list">
           {available.map((item, index) => {
-            const id = String(item.id ?? item.evidenceId ?? `unidentified-${index}`);
+            const reference = item.reference ?? item.id ?? item.evidenceId;
+            const id = String(reference ?? `unidentified-${index}`);
             const expandable = expandedIds.has(id);
             return (
               <article className="evidence-item" key={`${id}-${index}`}>
@@ -64,10 +65,10 @@ export default function EvidenceViewer({ evidence = [], referencedIds = [], rela
                   className="evidence-toggle"
                   onClick={() => toggle(id)}
                   aria-expanded={expandable}
-                  aria-label={`${expandable ? "Collapse" : "Expand"} evidence ${item.id ?? "without an ID"}`}
+                  aria-label={`${expandable ? "Collapse" : "Expand"} evidence ${reference ?? "without an ID"}`}
                 >
                   {expandable ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                  <span className="evidence-id">{item.id ?? "Unidentified source"}</span>
+                  <span className="evidence-id">{reference ?? "Unidentified source"}</span>
                   <span className={`severity-badge ${severityClass(item.severity)}`}>{item.severity ?? "UNKNOWN"}</span>
                 </button>
                 <p className="evidence-message">{evidenceMessage(item)}</p>
@@ -76,6 +77,7 @@ export default function EvidenceViewer({ evidence = [], referencedIds = [], rela
                   <span>{item.service ?? "Service not specified"}</span>
                   <time>{item.timestamp ? new Date(item.timestamp).toLocaleString() : "Timestamp unavailable"}</time>
                 </div>
+                {item.relevance && <p className="related-label">{item.relevance}</p>}
                 {expandable && (
                   <pre className="evidence-raw">{JSON.stringify(item.raw ?? item, null, 2)}</pre>
                 )}

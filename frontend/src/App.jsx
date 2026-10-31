@@ -2,7 +2,8 @@ import { Activity, Shield } from "lucide-react";
 import RCAAnalysis from "./pages/RCAAnalysis.jsx";
 import SecurityFindings from "./pages/SecurityFindings.jsx";
 
-export default function App({ incident = null, rcaResult = null, securityResult = null, loading = false, error = null }) {
+export default function App({ incident = null, result = null, rcaResult = null, securityResult = null, loading = false, error = null }) {
+  const moduleResult = result ?? rcaResult;
   return (
     <main className="app-shell">
       <header className="app-header">
@@ -29,8 +30,8 @@ export default function App({ incident = null, rcaResult = null, securityResult 
       </div>
 
       <div className="analysis-grid">
-        <RCAAnalysis incident={incident} result={rcaResult} loading={loading} error={error} />
-        <SecurityFindings incident={incident} result={securityResult} loading={loading} error={error} />
+        <RCAAnalysis incident={incident} result={moduleResult} loading={loading} error={error} />
+        <SecurityFindings incident={incident} result={result ?? securityResult ?? rcaResult} loading={loading} error={error} />
       </div>
       <footer className="app-footer">
         Agent findings are decision support. Verify evidence and follow your incident-response procedures.

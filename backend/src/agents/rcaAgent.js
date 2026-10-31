@@ -1,10 +1,17 @@
 import Groq from "groq-sdk";
 import { z } from "zod";
 import {
-  evidenceObjectsForIds,
   normalizeIncidentEvidence,
   validateEvidenceReferences
 } from "../utils/incidentEvidence.js";
+import {
+  createFinding,
+  createModuleResponse,
+  createRecommendation,
+  mergeModuleResponses,
+  toContractEvidence
+} from "../utils/agentResponse.js";
+import { runSecurityAgent } from "./securityAgent.js";
 
 const CATEGORIES = [
   "DATABASE_CONNECTION_EXHAUSTION",
@@ -336,56 +343,83 @@ export async function runRcaAgent(incident, similarIncidents = [], options = {})
     if (groq.warning) warnings.push(groq.warning);
     if (selected.warning) warnings.push(selected.warning);
 
-    const status = groq.analysis && !selected.warning && !groq.warning ? "COMPLETED" : "DEGRADED";
     const data = selected.analysis;
     const evidenceIds = data.evidenceIds;
+    const rootCauseDescription = [
+      data.explanation,
+      data.possibleTriggers.length ? `Possible triggers to validate: ${data.possibleTriggers.join(" ")}` : "",
+      data.missingEvidence.length ? `Evidence gaps: ${data.missingEvidence.join(" ")}` : "",
+      data.validationSteps.length ? `Validation steps: ${data.validationSteps.join(" ")}` : ""
+    ].filter(Boolean).join(" ");
+    const finding = createFinding({
+      id: "FIND-RCA-001",
+      title: data.probableRootCause,
+      description: rootCauseDescription,
+      severity: incident.severity,
+      confidence: null
+    });
+    const recommendations = data.validationSteps.map((step, index) => createRecommendation({
+      id: `REC-RCA-${String(index + 1).padStart(3, "0")}`,
+      action: step,
+      reason: "Validate the probable root-cause hypothesis against the incident evidence before deciding on remediation.",
+      priority: index === 0 ? "high" : "medium"
+    }));
+    const mode = selected.usedGroq
+      ? selected.warning ? "Groq analysis with evidence-validation warnings" : "Groq analysis"
+      : "Deterministic rule-based fallback";
+    const unsupportedReferenceNote = data.unsupportedEvidenceIds?.length
+      ? ` Unsupported model references were removed: ${data.unsupportedEvidenceIds.join(", ")}.`
+      : "";
+    const historyNote = data.similar.length
+      ? ` ${data.similar.length} retrieved historical incident(s) were provided as context only; similarity does not prove the current cause.`
+      : "";
 
-    return {
-      agentName: "RCA",
-      status,
-      summary: data.summary,
-      evidenceIds,
-      evidence: evidenceObjectsForIds(normalized.items, evidenceIds),
-      unsupportedEvidenceIds: data.unsupportedEvidenceIds ?? [],
-      warnings,
-      details: {
-        category: data.category,
-        probableRootCause: data.probableRootCause,
-        explanation: data.explanation,
-        possibleTriggers: data.possibleTriggers,
-        evidenceSupportScore: data.support.score,
-        scoreFactors: data.support.factors,
-        validationSteps: data.validationSteps,
-        missingEvidence: data.missingEvidence,
-        similarIncidents: data.similar,
-        mode: selected.usedGroq
-          ? selected.warning ? "GROQ_VALIDATED_WITH_WARNINGS" : "GROQ"
-          : "RULE_BASED_FALLBACK",
-        historicalContextAvailable: Array.isArray(similarIncidents)
+    return createModuleResponse({
+      incident,
+      status: "completed",
+      summary: `${data.summary} (${mode}).${warnings.length ? ` ${warnings.join(" ")}` : ""}`,
+      findings: [finding],
+      evidence: toContractEvidence(
+        normalized.items,
+        evidenceIds,
+        `Supports or contextualizes the probable root-cause hypothesis: ${data.probableRootCause}.`
+      ),
+      recommendations,
+      data: {
+        probable_root_cause: data.category === "INSUFFICIENT_EVIDENCE" ? null : data.probableRootCause,
+        root_cause_category: data.category === "INSUFFICIENT_EVIDENCE"
+          ? null
+          : data.category === "DATABASE_CONNECTION_EXHAUSTION" ? "database"
+            : data.category === "MEMORY_EXHAUSTION" ? "memory"
+              : data.category === "AUTHENTICATION_TRAFFIC_ANOMALY" ? "authentication"
+                : data.category === "DEPENDENCY_FAILURE" ? "dependency"
+                  : "deployment",
+        root_cause_confidence: null,
+        affected_components: incident.service ?? incident.serviceName
+          ? [incident.service ?? incident.serviceName]
+          : [],
+        reasoning: `${data.explanation} Analysis mode: ${mode}.${unsupportedReferenceNote}${historyNote}`
       }
-    };
+    });
   } catch (error) {
-    return {
-      agentName: "RCA",
-      status: "ERROR",
+    return createModuleResponse({
+      incident,
+      status: "failed",
       summary: "RCA analysis could not process the incident.",
-      evidenceIds: [],
-      evidence: [],
-      unsupportedEvidenceIds: [],
-      warnings: [error instanceof Error ? error.message : "Unexpected RCA analysis error."],
-      details: {
-        category: "INSUFFICIENT_EVIDENCE",
-        probableRootCause: "Unknown",
-        explanation: "The incident input could not be analyzed.",
-        possibleTriggers: [],
-        evidenceSupportScore: 0,
-        scoreFactors: {},
-        validationSteps: [],
-        missingEvidence: ["Provide incident data as an object with evidence arrays."],
-        similarIncidents: [],
-        mode: "UNAVAILABLE",
-        historicalContextAvailable: false
+      data: { reasoning: "The incident input could not be analyzed." },
+      error: {
+        code: "RCA_ANALYSIS_FAILED",
+        message: "RCA analysis could not process incident evidence.",
+        details: error instanceof Error ? error.message : null
       }
-    };
+    });
   }
+}
+
+export async function runRcaSecurityAnalysis(incident, similarIncidents = [], options = {}) {
+  const [rca, security] = await Promise.all([
+    runRcaAgent(incident, similarIncidents, options),
+    runSecurityAgent(incident)
+  ]);
+  return mergeModuleResponses(incident, rca, security);
 }

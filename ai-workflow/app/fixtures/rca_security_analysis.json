@@ -1,0 +1,23 @@
+{
+  "incident_id": "INC-001",
+  "component": "rca_security_analysis",
+  "status": "completed",
+  "timestamp": "2026-10-31T10:07:00Z",
+  "summary": "[MOCK] Probable root cause: database connection pool exhaustion in checkout-service. No evidence of a security attack.",
+  "findings": [
+    {"finding_id": "FIND-RCA-001", "title": "Probable root cause: DB connection pool exhaustion", "description": "All 50 pooled connections were held while 187 requests waited, causing acquisition timeouts and 503s. Root cause is suspected, not confirmed; why connections were held (slow queries vs. leak) is not yet established.", "severity": "critical", "confidence": 0.86},
+    {"finding_id": "FIND-SEC-001", "title": "No security indicators found", "description": "Request volume and client distribution were within normal range; no authentication anomalies or suspicious payloads in the analysed logs.", "severity": "info", "confidence": 0.7}
+  ],
+  "evidence": [
+    {"source": "checkout-service.log", "reference": "Line 1042", "content": "HikariPool-1 - Connection is not available ... (total=50, active=50, idle=0, waiting=187)", "relevance": "Direct observation of pool exhaustion."},
+    {"source": "orders-db metrics", "reference": "10:00-10:05 UTC", "content": "active_connections=50 (max=50), avg query time 2.4s (baseline 40ms)", "relevance": "Slow queries hold connections longer, supporting exhaustion hypothesis."}
+  ],
+  "recommendations": [],
+  "data": {
+    "mock_fixture": true,
+    "root_cause": {"description": "Database connection pool exhaustion in checkout-service", "status": "suspected", "confidence": 0.86},
+    "alternative_hypotheses": [{"description": "Connection leak introduced by recent code change", "confidence": 0.35}],
+    "security_analysis": {"attack_detected": false, "summary": "No security attack supported by available data.", "indicators": []}
+  },
+  "error": null
+}

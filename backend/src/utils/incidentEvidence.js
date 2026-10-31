@@ -9,6 +9,7 @@ const EVIDENCE_SOURCES = [
 ];
 
 const SEVERITIES = new Set(["TRACE", "DEBUG", "INFO", "WARN", "WARNING", "ERROR", "FATAL", "CRITICAL"]);
+const MAX_EVIDENCE_ITEMS = 500;
 
 function asString(value) {
   if (typeof value === "string") return value;
@@ -57,6 +58,7 @@ export function normalizeIncidentEvidence(incident) {
   const warnings = [];
   const seenIds = new Set();
   let unidentifiedCount = 0;
+  let truncatedCount = 0;
 
   for (const [field, source] of EVIDENCE_SOURCES) {
     const collection = incident[field];
@@ -67,6 +69,10 @@ export function normalizeIncidentEvidence(incident) {
     }
 
     collection.forEach((value, index) => {
+      if (items.length >= MAX_EVIDENCE_ITEMS) {
+        truncatedCount += 1;
+        return;
+      }
       if (!value || typeof value !== "object" || Array.isArray(value)) {
         warnings.push(`Ignored ${field}[${index}]: evidence must be an object.`);
         return;
@@ -105,6 +111,7 @@ export function normalizeIncidentEvidence(incident) {
   if (unidentifiedCount) {
     warnings.push(`${unidentifiedCount} evidence item(s) have no source ID and cannot be cited by an agent.`);
   }
+  if (truncatedCount) warnings.push(`Ignored ${truncatedCount} evidence item(s) after the ${MAX_EVIDENCE_ITEMS}-item limit.`);
   if (items.length === 0) warnings.push("No usable incident evidence was supplied.");
 
   return {

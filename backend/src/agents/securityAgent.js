@@ -13,7 +13,7 @@ function configuredThreshold(name, fallback, minimum = 1) {
 }
 
 function textFor(evidence) {
-  return `${evidence.message} ${JSON.stringify(evidence.raw)}`;
+  return `${evidence.message} ${evidence.type} ${evidence.service ?? ""}`;
 }
 
 function ipFor(raw) {

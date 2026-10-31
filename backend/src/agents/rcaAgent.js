@@ -71,7 +71,21 @@ const STABLE_BEFORE_PATTERN = /stable before|prior(?: to)? deployment.{0,30}stab
 const AFTER_DEPLOYMENT_PATTERN = /after (?:the )?(?:deployment|deploy|release)|since (?:the )?(?:deployment|deploy|release)|introduced after/i;
 
 function getText(evidence) {
-  return `${evidence.message} ${JSON.stringify(evidence.raw)}`;
+  const raw = evidence.raw;
+  return [
+    evidence.message,
+    evidence.type,
+    evidence.service,
+    evidence.severity,
+    raw.metricName,
+    raw.name,
+    raw.value,
+    raw.current,
+    raw.baseline,
+    raw.threshold,
+    raw.statusCode,
+    raw.code
+  ].filter((value) => value !== undefined && value !== null).join(" ");
 }
 
 function classifyEvidence(items) {
@@ -278,7 +292,7 @@ async function requestGroqAnalysis(incident, normalized, similarIncidents, optio
 }
 
 function chooseSupportedAnalysis(llmAnalysis, fallback, normalized) {
-  if (!llmAnalysis) return { analysis: fallback, warning: null };
+  if (!llmAnalysis) return { analysis: fallback, warning: null, usedGroq: false };
   const references = validateEvidenceReferences(llmAnalysis.evidenceIds, normalized.idSet);
   const corroborated = references.verified.some((id) => fallback.evidenceIds.includes(id));
   const categorySupported = llmAnalysis.category === fallback.category;
@@ -286,6 +300,7 @@ function chooseSupportedAnalysis(llmAnalysis, fallback, normalized) {
   if (llmAnalysis.category !== "INSUFFICIENT_EVIDENCE" && (!corroborated || !categorySupported)) {
     return {
       analysis: fallback,
+      usedGroq: false,
       warning: references.unsupported.length
         ? `Groq output contained ${references.unsupported.length} unsupported reference(s) and was not sufficiently corroborated; rule-based analysis was used.`
         : "Groq findings were not sufficiently corroborated by the deterministic evidence checks; rule-based analysis was used."
@@ -304,6 +319,7 @@ function chooseSupportedAnalysis(llmAnalysis, fallback, normalized) {
       missingEvidence: llmAnalysis.missingEvidence,
       unsupportedEvidenceIds: references.unsupported
     },
+    usedGroq: true,
     warning: references.unsupported.length
       ? `Removed ${references.unsupported.length} unsupported evidence reference(s) from Groq output.`
       : null
@@ -342,7 +358,9 @@ export async function runRcaAgent(incident, similarIncidents = [], options = {})
         validationSteps: data.validationSteps,
         missingEvidence: data.missingEvidence,
         similarIncidents: data.similar,
-        mode: status === "COMPLETED" ? "GROQ" : "RULE_BASED_FALLBACK",
+        mode: selected.usedGroq
+          ? selected.warning ? "GROQ_VALIDATED_WITH_WARNINGS" : "GROQ"
+          : "RULE_BASED_FALLBACK",
         historicalContextAvailable: Array.isArray(similarIncidents)
       }
     };

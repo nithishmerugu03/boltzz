@@ -1,4 +1,6 @@
+import mongoose from "mongoose";
 import monitoringAgent from "../agents/monitoringAgent.js";
+import { Incident, Alert, MonitoringEvent } from "../models/monitoringModels.js";
 
 class MonitoringService {
   constructor() {
@@ -80,6 +82,71 @@ class MonitoringService {
     ];
   }
 
+  getPersistenceStatus() {
+    return {
+      databaseEnabled: Boolean(process.env.MONGODB_URI),
+      databaseConnected: mongoose.connection.readyState === 1,
+      collectionCount: 3,
+      totalIncidents: this.incidents.length,
+      totalAlerts: this.alerts.length,
+      totalEvents: this.events.length,
+    };
+  }
+
+  persistIncident(incident) {
+    if (!process.env.MONGODB_URI || mongoose.connection.readyState !== 1) {
+      return null;
+    }
+
+    try {
+      Incident.findOneAndUpdate(
+        { id: incident.id },
+        { ...incident },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      ).catch(() => {});
+      return incident;
+    } catch (error) {
+      console.error("Failed to persist incident:", error.message);
+      return null;
+    }
+  }
+
+  persistAlert(alert) {
+    if (!process.env.MONGODB_URI || mongoose.connection.readyState !== 1) {
+      return null;
+    }
+
+    try {
+      Alert.findOneAndUpdate(
+        { id: alert.id },
+        { ...alert },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      ).catch(() => {});
+      return alert;
+    } catch (error) {
+      console.error("Failed to persist alert:", error.message);
+      return null;
+    }
+  }
+
+  persistEvent(event) {
+    if (!process.env.MONGODB_URI || mongoose.connection.readyState !== 1) {
+      return null;
+    }
+
+    try {
+      MonitoringEvent.findOneAndUpdate(
+        { id: event.id },
+        { ...event },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      ).catch(() => {});
+      return event;
+    } catch (error) {
+      console.error("Failed to persist event:", error.message);
+      return null;
+    }
+  }
+
   getIncidents() {
     return this.incidents;
   }
@@ -119,6 +186,9 @@ class MonitoringService {
     const alert = monitoringAgent.buildAlertFromIncident(incident);
     this.alerts.unshift(alert);
 
+    this.persistIncident(incident);
+    this.persistAlert(alert);
+
     return { incident, alert };
   }
 
@@ -140,6 +210,8 @@ class MonitoringService {
         return incident;
       });
     }
+
+    this.persistEvent(event);
 
     return { event, relatedIncidents: relatedIncidents.map((incident) => incident.id) };
   }

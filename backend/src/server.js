@@ -1,4 +1,5 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config({ path: new URL('../.env', import.meta.url) });
 import { createRequire } from 'node:module';
 import express from 'express';
 import cors from 'cors';
@@ -96,9 +97,9 @@ app.use((err, _req, res, _next) => {
 const port = Number(process.env.PORT) || 4000;
 if (process.env.MONGODB_URI) {
   mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 8000 })
-    .then(() => console.log('Connected to MongoDB Atlas.'))
-    .catch((err) => console.error(`MongoDB connection unavailable: ${err.message}`));
+    .then(() => console.log('Connected to MongoDB.'))
+    .catch(() => console.error('MongoDB connection unavailable. Check MONGODB_URI, database availability, and access permissions.'));
 } else console.warn('MONGODB_URI is not configured; persistence APIs will return 503.');
 
-app.listen(port, () => console.log(`Remediation API listening on http://localhost:${port}`));
+app.listen(port, process.env.HOST || '127.0.0.1', () => console.log(`Remediation API listening on port ${port}`));
 export default app;

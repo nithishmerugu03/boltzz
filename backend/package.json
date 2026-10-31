@@ -6,17 +6,21 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
+    "db:local": "node scripts/localDatabase.js",
     "test": "node --test",
     "evaluate:rca": "node scripts/evaluateRca.js",
     "seed:knowledge": "node scripts/seedKnowledge.js"
   },
   "dependencies": {
-    "groq-sdk": "^0.15.0",
-    "zod": "^4.6.7",
     "@huggingface/transformers": "4.3.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "mongoose": "^8.9.5"
+    "groq-sdk": "^0.15.0",
+    "mongoose": "^8.9.5",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^11.3.0"
   }
 }

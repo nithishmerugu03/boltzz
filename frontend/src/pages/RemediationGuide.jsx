@@ -123,13 +123,13 @@ export default function RemediationGuide({ incident = null, result = null }) {
   const incidentIdFromProps = incident?.incident_id ?? incident?.incidentId ?? incident?.id ?? result?.incident_id;
   const incidentId = incidentIdFromProps ?? demoIncident.incident_id;
   const probableCause = result?.data?.probable_root_cause ?? incident?.rootCause ?? demoIncident.rootCause;
-  const evidenceFromResult = Array.isArray(result?.evidence)
-    ? result.evidence.map((item) => item.content).filter(Boolean)
+  const evidenceTextFromResult = Array.isArray(result?.evidence)
+    ? result.evidence.map((item) => item.content).filter(Boolean).join("\n")
     : null;
   const [selectedIncidentId, setSelectedIncidentId] = useState(incidentId);
   const [rootCause, setRootCause] = useState(probableCause);
   const [evidenceText, setEvidenceText] = useState(
-    (evidenceFromResult ?? incident?.evidence ?? demoIncident.evidence).join("\n")
+    evidenceTextFromResult ?? (incident?.evidence ?? demoIncident.evidence).join("\n")
   );
   const [plan, setPlan] = useState(null);
   const [reviewer, setReviewer] = useState("");
@@ -148,6 +148,16 @@ export default function RemediationGuide({ incident = null, result = null }) {
       .catch((requestError) => { if (active) setError(requestError.message); });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    setSelectedIncidentId(incidentId);
+    setRootCause(probableCause);
+    if (evidenceTextFromResult !== null) setEvidenceText(evidenceTextFromResult);
+    setPlan(null);
+    setReviewReasons({});
+    setExpandedStep("");
+    setNotice("");
+  }, [incidentId, probableCause, evidenceTextFromResult]);
 
   async function loadPlan(id = selectedIncidentId) {
     if (!id.trim()) {

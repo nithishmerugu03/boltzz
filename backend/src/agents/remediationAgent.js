@@ -24,8 +24,10 @@ async function groqSteps(input) {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) return { steps: deterministicSteps(input), provider: 'DETERMINISTIC', model: null, fallbackUsed: true };
   const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+  const timeoutMs = Number(process.env.GROQ_TIMEOUT_MS) || 15000;
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST', headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(timeoutMs),
     body: JSON.stringify({ model, temperature: 0.2, response_format: { type: 'json_object' }, messages: [
       { role: 'system', content: 'Generate a safe remediation proposal only. Never execute actions. Return JSON with a steps array, each step containing title, description, reason, expectedOutcome, prerequisites array, actionType (DIAGNOSTIC, CONFIGURATION, OPERATIONAL, ROLLBACK, DATABASE_CHANGE). Keep steps actionable, grounded in given RCA, and avoid destructive operations.' },
       { role: 'user', content: JSON.stringify({ incidentId: input.incidentId, rootCause: input.rootCause, evidence: input.evidence, securityFindings: input.securityFindings || [] }) }

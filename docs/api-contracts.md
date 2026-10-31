@@ -121,6 +121,15 @@ On failure, `status` is `failed` and `error` is `{ code, message, details: null 
 <RCAAnalysis incident={incident} result={combined} />
 <SecurityFindings incident={incident} result={combined} />
 ```
+
+## Incident analysis and Knowledge API
+
+- `POST /api/analysis` accepts an incident JSON object containing a non-empty `incident_id` (aliases `incidentId` and `id` are accepted) and relevant service, description, log, event, metric, or timeline evidence. It returns the canonical RCA/Security response. Historical documents are supplied to RCA as context and are not added as incident evidence. MongoDB retrieval errors are reported in the existing summary and reasoning fields while analysis continues without historical results.
+- `GET /api/health` reports whether MongoDB is connected, whether Groq is configured, and the selected retrieval backend. It never returns credentials.
+- `/api/knowledge` exposes the Knowledge module's search and document routes; MongoDB must be connected.
+- `npm run seed:knowledge` from `backend/` previews synthetic knowledge inserts. Only run `npm run seed:knowledge -- --apply` after confirming the configured database is non-production. The seeder requires `NODE_ENV=development` or `test`, uses only the bundled synthetic dataset, and does not update or delete existing documents.
+- Keyword retrieval is the default and does not require an embedding model. Atlas Vector Search or local-vector retrieval must be explicitly configured and provisioned.
+
 ## Remediation workflow API contract
 
 Every remediation API response uses this exact top-level shape:

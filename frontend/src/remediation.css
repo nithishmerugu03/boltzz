@@ -2,6 +2,102 @@
   color: #172432;
 }
 
+.incident-workbench {
+  margin-bottom: 18px;
+}
+
+.incident-workbench-copy {
+  margin: 14px 0;
+  color: #748292;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.incident-json-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #526371;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.incident-json {
+  display: block;
+  width: 100%;
+  min-height: 190px;
+  padding: 12px;
+  border: 1px solid #dce5e9;
+  border-radius: 8px;
+  color: #dce8f4;
+  background: #142131;
+  font: 11px/1.55 Consolas, "Courier New", monospace;
+  resize: vertical;
+  tab-size: 2;
+}
+
+.incident-json:focus-visible {
+  border-color: #087e83;
+  outline: 3px solid #087e8322;
+}
+
+.incident-workbench-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.incident-workbench-footer > span {
+  color: #82909b;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.analysis-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 7px;
+  color: #fff;
+  background: #087e83;
+  font: 700 11px "Segoe UI", sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.analysis-submit:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+
+.incident-form-error,
+.incident-api-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 10px 0 0;
+  color: #a23d42;
+  font-size: 11px;
+}
+
+.incident-api-error {
+  margin: 0 0 16px;
+  padding: 11px 13px;
+  border: 1px solid #f0caca;
+  border-radius: 8px;
+  background: #fff2f1;
+}
+
+.incident-form-error svg,
+.incident-api-error svg {
+  flex: 0 0 auto;
+}
+
 .remediation-section {
   margin: 38px 0 24px;
   color: #eaf0f8;
@@ -475,9 +571,14 @@
     flex-direction: column;
   }
 
-  .rem-section-heading {
+  .rem-section-heading,
+  .incident-workbench-footer {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .analysis-submit {
+    width: 100%;
   }
 
   .rem-step-summary {

@@ -1,18 +1,36 @@
+import { useState } from "react";
 import { Activity, Shield } from "lucide-react";
+import IncidentAnalysisForm from "./components/IncidentAnalysisForm.jsx";
 import RCAAnalysis from "./pages/RCAAnalysis.jsx";
 import RemediationGuide from "./pages/RemediationGuide.jsx";
 import SecurityFindings from "./pages/SecurityFindings.jsx";
 
-export default function App({
-  incident = null,
-  result = null,
-  rcaResult = null,
-  securityResult = null,
-  loading = false,
-  error = null
-}) {
-  const moduleResult = result ?? rcaResult;
-  const securityModuleResult = result ?? securityResult ?? rcaResult;
+export default function App() {
+  const [incident, setIncident] = useState(null);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const moduleResult = result;
+  const securityModuleResult = result;
+
+  function startAnalysis() {
+    setError("");
+    setIncident(null);
+    setResult(null);
+    setLoading(true);
+  }
+
+  function completeAnalysis(submittedIncident, analysisResult) {
+    setIncident(submittedIncident);
+    setResult(analysisResult);
+    setLoading(false);
+    setError("");
+  }
+
+  function failAnalysis(message) {
+    setLoading(false);
+    setError(message);
+  }
 
   return (
     <main className="app-shell">
@@ -38,6 +56,14 @@ export default function App({
           <span><Shield size={15} /> Human review</span>
         </div>
       </div>
+
+      <IncidentAnalysisForm
+        loading={loading}
+        onAnalysisStart={startAnalysis}
+        onAnalysisComplete={completeAnalysis}
+        onAnalysisError={failAnalysis}
+      />
+      {error && <div className="incident-api-error" role="alert"><Shield size={16} />{error}</div>}
 
       <div className="analysis-grid">
         <RCAAnalysis incident={incident} result={moduleResult} loading={loading} error={error} />

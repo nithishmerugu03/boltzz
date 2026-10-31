@@ -12,7 +12,7 @@ An AI-powered incident investigation and response platform proposed and partiall
 
 AegisOps is designed as an incident command centre where engineers can review operational signals, investigate probable causes, assess security concerns, and evaluate recovery actions in one place.
 
-Five specialised agents are planned to collaborate through a backend orchestration layer. RCA/Security, Knowledge/RAG, and Remediation modules are implemented as standalone components; shared orchestration, monitoring ingestion, communication, and authenticated workflow approval remain planned.
+The incident-analysis API connects MongoDB-backed Knowledge/RAG retrieval with the RCA/Security agents. The Remediation module remains a separately reviewed workflow; a broader five-agent orchestrator, monitoring ingestion, communication, and authenticated approval remain planned.
 
 ## 2. Problem statement
 
@@ -37,7 +37,7 @@ RCA/Security investigation, Knowledge/RAG retrieval, and the Remediation review 
 | Unified intake | Receive alerts, tickets, logs, deployment events, and monitoring signals. | Planned |
 | Event correlation | Group evidence by service, timestamp, and trace identifier; identify affected services. | Planned |
 | Evidence-based investigation | Present probable causes, security indicators, and evidence gaps with source references. | RCA/Security module implemented; broader correlation planned |
-| Historical retrieval | Search incident reports and runbooks with embeddings and vector search. | Planned; RCA accepts retrieved context |
+| Historical retrieval | Search historical incidents and runbooks through MongoDB-backed keyword retrieval, with optional semantic backends. | Implemented; semantic search requires provider/index configuration |
 | Remediation recommendations | Generate safety-checked steps, validate against runbooks, and record engineer review. | Implemented; sample runbook data and temporary local review only |
 | Human approval | Let an authorised engineer approve or reject the exact executable proposal. | Planned |
 | Live investigation view | Show agent findings and source evidence in the dashboard. | RCA/Security panels implemented; War Room/SSE planned |
@@ -46,7 +46,7 @@ RCA/Security investigation, Knowledge/RAG retrieval, and the Remediation review 
 
 ## 5. Multi-agent architecture
 
-**Planned:** A custom backend orchestrator will coordinate five agents using structured inputs and outputs. RCA/Security, Knowledge/RAG, and Remediation are implemented as standalone modules; Monitoring, Communication, and shared orchestration remain planned.
+The shared Express API now accepts incidents at `/api/analysis`, retrieves historical knowledge from the connected MongoDB database, and passes those results into RCA/Security. The Remediation API remains a separate human-reviewed workflow. Monitoring, Communication, authenticated approval, and shared multi-agent orchestration remain planned.
 
 | Agent | Responsibilities | Outputs and boundaries |
 | --- | --- | --- |
@@ -56,7 +56,7 @@ RCA/Security investigation, Knowledge/RAG retrieval, and the Remediation review 
 | **4. Remediation Agent** | Interpret RCA findings, propose diagnostic and recovery steps, apply deterministic safety checks, compare proposals with available runbook instructions, and record engineer review. | Implemented with deterministic fallback and optional Groq; sample runbooks are simulated and no operational actions are executed. |
 | **5. Communication Agent** | Draft technical summaries, stakeholder updates, progress explanations, post-incident reports, and knowledge articles. | Planned; communications must reflect verified incident status and observed outcomes. |
 
-Groq-hosted reasoning is optionally integrated in the RCA agent when a backend key is configured; it falls back explicitly when unavailable. Historical retrieval remains external to this module. The evidence-support score is a heuristic, not a calibrated probability.
+Groq-hosted reasoning is optionally integrated in the RCA/Security and Remediation agents when a backend key is configured; they fall back to deterministic behavior when unavailable. The incident-analysis API retrieves historical context from MongoDB and passes it to RCA/Security without treating it as current evidence. The evidence-support score is a heuristic, not a calibrated probability.
 
 ## 6. System architecture diagram
 
@@ -66,13 +66,13 @@ This is the **proposed platform architecture**. The RCA/Security agents and revi
 flowchart TD
     Sources[Logs, alerts, metrics, tickets, deployments, security events]
     Engineer[Authorised engineer]
-    UI[React + Vite RCA/Security panels]
+    UI[React + Vite incident workbench]
     Auth[Authentication provider - planned]
 
     subgraph Backend[Node.js + Express backend]
         API[REST APIs + Zod validation + role-based authorisation]
         SSE[SSE investigation updates]
-        Orch[Custom agent orchestrator]
+        Orch[Incident analysis API]
         Monitor[1. Monitoring Agent]
         RCA[2. Root Cause Analysis Agent]
         Security[3. Security Analysis Agent]
@@ -98,13 +98,13 @@ flowchart TD
     UI --> API
     API --> Auth
     API --> Orch
-    Orch <--> Monitor
-    Orch <--> RCA
-    Orch <--> Security
-    Orch <--> Remediation
-    Orch <--> Comms
-    Orch <--> LLM
-    RCA --> RAG
+    Orch --> RCA
+    Orch --> Security
+    Orch --> RAG
+    Orch --> LLM
+    Orch -. planned .-> Monitor
+    Orch -. planned .-> Remediation
+    Orch -. planned .-> Comms
     Remediation --> RAG
     Knowledge --> Embeddings
     Embeddings --> DB
@@ -152,14 +152,14 @@ The table distinguishes this module's implemented dependencies from the wider pl
 
 | Layer | Proposed technology and purpose | Status |
 | --- | --- | --- |
-| Frontend | React.js, Vite, Mermaid, and Lucide React for investigation and review panels | Implemented; host orchestration integration planned |
-| Backend | Node.js ES modules, Express REST API, and MongoDB persistence for remediation plans | RCA/Security and Remediation modules implemented; shared orchestration planned |
+| Frontend | React.js, Vite, Mermaid, and Lucide React for investigation and review panels | Incident workbench, RCA/Security panels, and Remediation review UI implemented |
+| Backend | Node.js ES modules, Express REST API, and MongoDB persistence for incident knowledge and remediation plans | `/api/analysis`, Knowledge/RAG, and Remediation APIs implemented |
 | Live updates | Server-Sent Events (SSE) for investigation progress | Planned |
 | Validation | Zod for Groq RCA output validation and evidence-reference checks | Implemented for this module |
 | AI reasoning | Groq-hosted LLM and structured RCA output | Optional RCA integration; live API behavior requires credentials |
 | Agent coordination | Custom orchestration | Planned |
 | Embeddings | Separate embedding model/provider for semantic retrieval | Planned; provider/model to be selected |
-| Data and retrieval | MongoDB Atlas Vector Search for incident/runbook retrieval | Planned; RCA accepts externally retrieved results |
+| Data and retrieval | MongoDB-backed keyword retrieval by default; Atlas Vector Search and local-vector retrieval are optional | Implemented; vector retrieval requires corresponding configuration/index/model |
 | Authentication | Provider to be selected by the team | Planned |
 | Security controls | Deterministic remediation safety checks and recorded local engineer review | Partial; authentication, verified identity, execution allowlist, and audit integration remain planned |
 | Frontend hosting | Vercel | Planned |
@@ -188,7 +188,7 @@ This maps design intent to requirements and notes the current RCA/Security modul
 | FR-02 | Event Correlation | Monitoring Agent with deterministic grouping and thresholds | Planned |
 | FR-03 | Root Cause Analysis | Evidence-linked hypotheses and security investigation | RCA/Security module implemented; orchestrator integration planned |
 | FR-04 | Multi-Agent Investigation | Orchestrator coordinating five specialised agents | Planned |
-| FR-05 | Knowledge Retrieval | Embeddings, incident/runbook corpus, and MongoDB Atlas Vector Search | Planned |
+| FR-05 | Knowledge Retrieval | MongoDB incident/runbook corpus, keyword search, and optional semantic retrieval | Implemented; semantic backends require configuration |
 | FR-06 | Remediation Recommendation | Structured proposals with risks and verification steps | Planned |
 | FR-07 | Stakeholder Communication | Communication Agent grounded in verified status | Planned |
 | FR-08 | Human Approval Workflow | Backend role checks, exact-action approval, and policy enforcement | Planned |
@@ -222,12 +222,12 @@ The backend and frontend have independent package manifests and lockfiles. Datab
 
 To run and test the implemented module, install Node.js and npm. A Mermaid-capable Markdown viewer can display the proposed architecture diagram.
 
-**Additional planned platform prerequisites:**
+**Additional integration prerequisites:**
 
 - Node.js and a package manager; supported versions and package manager are not yet defined.
-- MongoDB Atlas for the planned knowledge/RAG integration.
-- Optional Groq credentials and a selected reasoning model for live RCA.
-- Access to the separately selected embedding model/provider.
+- MongoDB connection string for knowledge retrieval and remediation persistence.
+- Optional Groq credentials and a selected reasoning model for live RCA and Remediation generation.
+- Optional Atlas Vector Search index or local embedding model when enabling semantic retrieval.
 - An authorised demonstration environment if controlled execution is implemented.
 
 ## 13. Installation and local setup
@@ -244,7 +244,7 @@ npm install
 Pop-Location
 ```
 
-`backend/.env.example` documents optional settings. Set them in the shell or host environment when integrating the agents; this standalone module does not load `.env` files itself. No database setup is needed by these agents.
+Copy `backend/.env.example` to `backend/.env`, then set `MONGODB_URI` and, optionally, `GROQ_API_KEY`. The backend loads `.env` automatically. Keep real credentials out of source control and do not place provider keys in frontend variables.
 
 ## 14. Environment variables
 
@@ -255,6 +255,10 @@ The backend template is `backend/.env.example`. The RCA key is optional; do not 
 | `GROQ_API_KEY` | Optional server-side Groq credential; absent key selects explicit local fallback |
 | `GROQ_MODEL` | Optional model override; defaults to `llama-3.3-70b-versatile` |
 | `GROQ_TIMEOUT_MS` | Groq request timeout; defaults to `15000` |
+| `MONGODB_URI` | MongoDB connection string for knowledge retrieval and saved Remediation plans |
+| `NODE_ENV` | Must be `development` or `test` to run the opt-in synthetic knowledge seeder |
+| `KNOWLEDGE_SEARCH_BACKEND` | `keyword` by default; set `atlas` or `local-vector` to enable configured semantic retrieval |
+| `KNOWLEDGE_SEARCH_FALLBACK` | Retrieval fallback mode for optional semantic backends |
 | `SECURITY_FAILED_LOGIN_THRESHOLD` | Repeated failure threshold; defaults to `5` |
 | `SECURITY_AUTH_SPIKE_THRESHOLD` | Request spike threshold; defaults to `20` |
 | `SECURITY_EVENT_WINDOW_MS` | Security event window; defaults to `300000` |
@@ -263,7 +267,7 @@ The existing `.gitignore` excludes `.env` and `.env.*` while allowing `.env.exam
 
 ## 15. Running the application
 
-The standalone RCA/Security panels can be previewed with Vite:
+Run the backend API and the frontend development server in separate terminals:
 
 ```powershell
 Push-Location .\frontend
@@ -271,7 +275,15 @@ npm run dev
 Pop-Location
 ```
 
-The UI is prop-driven and initially displays its no-investigation state. The host orchestrator must supply agent results; this module does not define an HTTP service or demo dataset.
+```powershell
+Push-Location .\backend
+npm run dev
+Pop-Location
+```
+
+The UI posts the editable incident JSON to `POST /api/analysis`. MongoDB knowledge retrieval uses keyword search by default; when MongoDB is unavailable, analysis continues without history and reports that in the existing summary/reasoning fields. Groq analysis is optional and falls back to deterministic RCA/Security behavior when no key is configured. The health endpoint reports connection/configuration status without exposing secrets.
+
+Knowledge seeding is opt-in and synthetic-only. From `backend`, run `npm run seed:knowledge` for a dry-run preview. Verify the database is non-production, then use `npm run seed:knowledge -- --apply` to insert the sample records. Seeding requires `NODE_ENV=development` or `test`; it never runs during server startup.
 
 ## 16. Testing
 
@@ -307,7 +319,7 @@ Autonomous repair of real production environments is not an implemented capabili
 | --- | --- | --- |
 | Documentation | Present | This README describes the proposal and known gaps |
 | Ignore configuration | Present | `.gitignore` covers dependencies, builds, logs, and environment files |
-| Frontend/backend | Partial | RCA/Security UI, remediation UI/API, and Knowledge/RAG modules exist; shared orchestration remains planned |
+| Frontend/backend | Partial | Incident submission UI, `/api/analysis`, MongoDB-backed knowledge retrieval, RCA/Security UI, and Remediation UI/API are integrated; broader orchestration remains planned |
 | RCA and Security | Implemented | Evidence-aware RCA fallback/optional Groq and deterministic security findings |
 | Monitoring, communication, orchestration | Planned | These modules are not integrated into a shared workflow |
 | Knowledge/RAG | Implemented | MongoDB knowledge module and retrieval evaluation exist; configure credentials/index for live use |
@@ -320,7 +332,7 @@ The frontend and backend can be started locally. Remediation plan persistence re
 
 ## 19. Future enhancements
 
-The next roadmap steps are to integrate validated intake, RCA/Security, Knowledge/RAG, and Remediation through shared orchestration; connect authenticated approval and auditable recovery verification; then add communication and incident learning.
+The next roadmap steps are to expand the incident-analysis API into shared workflow orchestration, connect authenticated approval and auditable recovery verification, then add monitoring ingestion, communication, and incident learning.
 
 Potential later enhancements, subject to scope confirmation, include additional operational connectors, broader incident evaluation datasets, retrieval relevance evaluation, and richer investigation history. Performance claims should follow reproducible experiments.
 

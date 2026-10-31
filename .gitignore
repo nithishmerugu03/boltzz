@@ -148,7 +148,5 @@ vite.config.ts.timestamp-*
 # Turbo Repo
 .turbo
 
-# Python
-.venv/
-__pycache__/
-.pytest_cache/
+# Persistent local development database (never commit data)
+.local/

@@ -1,44 +1,80 @@
-import { Link, Route, Routes, useParams } from 'react-router-dom';
-import { MockBanner } from './components/ui.jsx';
-import IncidentList from './pages/IncidentList.jsx';
-import RcaSecurityDashboard from './pages/RcaSecurityDashboard.jsx';
-import Report from './pages/Report.jsx';
-import WarRoom, { useReport } from './pages/WarRoom.jsx';
-
-// Feeds the workflow's rca_security_analysis output into the RCA & Security dashboard.
-function RcaSecurityRoute() {
-  const { id } = useParams();
-  const { report, error } = useReport(id);
-  const incident = report?.incident;
-  return (
-    <>
-      <Link to={`/incidents/${id}`} className="text-sm text-blue-600 underline">← War room</Link>
-      <div className="mt-2"><MockBanner show={report?.status?.execution_mode === 'mock'} /></div>
-      <RcaSecurityDashboard
-        // The dashboard reads a single `service`; the workflow stores a list of affected services.
-        incident={incident ? { ...incident, service: incident.affected_services?.[0] } : null}
-        result={report?.incident?.rca_security_analysis ?? null}
-        loading={!report && !error}
-        error={error || null}
-      />
-    </>
-  );
-}
+import { useState } from "react";
+import { Activity, Shield } from "lucide-react";
+import IncidentAnalysisForm from "./components/IncidentAnalysisForm.jsx";
+import RCAAnalysis from "./pages/RCAAnalysis.jsx";
+import RemediationGuide from "./pages/RemediationGuide.jsx";
+import SecurityFindings from "./pages/SecurityFindings.jsx";
 
 export default function App() {
+  const [incident, setIncident] = useState(null);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const moduleResult = result;
+  const securityModuleResult = result;
+
+  function startAnalysis() {
+    setError("");
+    setIncident(null);
+    setResult(null);
+    setLoading(true);
+  }
+
+  function completeAnalysis(submittedIncident, analysisResult) {
+    setIncident(submittedIncident);
+    setResult(analysisResult);
+    setLoading(false);
+    setError("");
+  }
+
+  function failAnalysis(message) {
+    setLoading(false);
+    setError(message);
+  }
+
   return (
-    <div className="min-h-screen text-slate-900">
-      <header className="no-print border-b border-slate-200 bg-slate-900 px-6 py-3 text-white">
-        <Link to="/" className="font-semibold">AegisOps · Incident War Room</Link>
+    <main className="app-shell">
+      <header className="app-header">
+        <div className="brand-mark" aria-hidden="true">A</div>
+        <div>
+          <p className="eyebrow">AUTONOMOUS INCIDENT WAR ROOM</p>
+          <h1>Investigation and Recovery</h1>
+        </div>
+        <span className="header-status"><span /> Evidence-led analysis</span>
       </header>
-      <main className="mx-auto max-w-7xl p-4">
-        <Routes>
-          <Route path="/" element={<IncidentList />} />
-          <Route path="/incidents/:id" element={<WarRoom />} />
-          <Route path="/incidents/:id/rca" element={<RcaSecurityRoute />} />
-          <Route path="/incidents/:id/report" element={<Report />} />
-        </Routes>
-      </main>
-    </div>
+
+      <div className="page-intro">
+        <div>
+          <p className="eyebrow">RCA, SECURITY &amp; REMEDIATION</p>
+          <h2>Understand the incident before you act.</h2>
+          <p className="intro-copy">
+            Review probable causes and security signals, then assess runbook-aware recovery recommendations. Proposed changes stay under engineer review.
+          </p>
+        </div>
+        <div className="intro-badges">
+          <span><Activity size={15} /> Investigation</span>
+          <span><Shield size={15} /> Human review</span>
+        </div>
+      </div>
+
+      <IncidentAnalysisForm
+        loading={loading}
+        onAnalysisStart={startAnalysis}
+        onAnalysisComplete={completeAnalysis}
+        onAnalysisError={failAnalysis}
+      />
+      {error && <div className="incident-api-error" role="alert"><Shield size={16} />{error}</div>}
+
+      <div className="analysis-grid">
+        <RCAAnalysis incident={incident} result={moduleResult} loading={loading} error={error} />
+        <SecurityFindings incident={incident} result={securityModuleResult} loading={loading} error={error} />
+      </div>
+
+      <RemediationGuide incident={incident} result={moduleResult} />
+
+      <footer className="app-footer">
+        Agent findings are decision support. Verify evidence and follow incident-response procedures. This application does not execute production changes.
+      </footer>
+    </main>
   );
 }

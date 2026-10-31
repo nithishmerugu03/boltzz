@@ -4,11 +4,22 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
     "evaluate:rca": "node scripts/evaluateRca.js"
   },
   "dependencies": {
+    "@google/genai": "^2.32.0",
+    "@huggingface/transformers": "4.3.2",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
     "groq-sdk": "^0.15.0",
-    "zod": "^4.6.7",
-    "@huggingface/transformers": "4.3.2"
+    "mongoose": "^9.11.4",
+    "multer": "^2.5.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }

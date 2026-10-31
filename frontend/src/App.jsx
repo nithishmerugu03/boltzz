@@ -39,3 +39,4 @@ export default function App({ incident = null, result = null, rcaResult = null, 
     </main>
   );
 }
+

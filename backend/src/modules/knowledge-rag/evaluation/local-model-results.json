@@ -1,0 +1,382 @@
+{
+  "testedAt": "2026-10-31T08:05:17.354Z",
+  "type": "real-local-model; no database or Atlas",
+  "identity": {
+    "provider": "transformers-local",
+    "model": "Xenova/all-MiniLM-L6-v2",
+    "dimensions": 384,
+    "revision": "751bff37182d3f1213fa05d7196b954e230abad9",
+    "dtype": "q8",
+    "textVersion": "incident-signals-v1"
+  },
+  "documents": 40,
+  "queries": 18,
+  "transformersVersion": "4.3.2",
+  "networkDisabled": true,
+  "maxDocumentTokens": 54,
+  "top1": 1,
+  "top3": 1,
+  "limitations": "Small hand-written synthetic relevance set; not a production benchmark. No chunk averaging.",
+  "results": [
+    {
+      "query": "Payment requests fail because database connections never get returned after errors",
+      "expected": "HIST-001",
+      "top": [
+        {
+          "incidentId": "HIST-001",
+          "similarity": 0.5882949128784946
+        },
+        {
+          "incidentId": "HIST-031",
+          "similarity": 0.5355274137528984
+        },
+        {
+          "incidentId": "HIST-005",
+          "similarity": 0.3985458580700291
+        }
+      ],
+      "top1": true,
+      "top3": true
+    },
+    {
+      "query": "Catalog category lookup scans every database document and is slow",
+      "expected": "HIST-002",
+      "top": [
+        {
+          "incidentId": "HIST-002",
+          "similarity": 0.5333263721154539
+        },
+        {
+          "incidentId": "HIST-010",
+          "similarity": 0.24919924954380038
+        },
+        {
+          "incidentId": "HIST-036",
+          "similarity": 0.2293547714376883
+        }
+      ],
+      "top1": true,
+      "top3": true
+    },
+    {
+      "query": "Database rejects billing credentials immediately after password rotation",
+      "expected": "HIST-005",
+      "top": [
+        {
+          "incidentId": "HIST-005",
+          "similarity": 0.6818071834343585
+        },
+        {
+          "incidentId": "HIST-035",
+          "similarity": 0.45602321188877315
+        },
+        {
+          "incidentId": "HIST-001",
+          "similarity": 0.3523223849798947
+        }
+      ],
+      "top1": true,
+      "top3": true
+    },
+    {
+      "query": "Redelivered messages cause duplicate event inserts in fulfilment",
+      "expected": "HIST-006",
+      "top": [
+        {
+          "incidentId": "HIST-006",
+          "similarity": 0.631938279213872
+        },
+        {
+          "incidentId": "HIST-009",
+          "similarity": 0.3338358853425729
+        },
+        {
+          "incidentId": "HIST-035",
+          "similarity": 0.26268732309976095
+        }
+      ],
+      "top1": true,
+      "top3": true
+    },
+    {
+      "query": "Stock reads return an older value from a lagging replica",
+      "expected": "HIST-007",
+      "top": [
+        {
+          "incidentId": "HIST-007",
+          "similarity": 0.5952484863390892
+        },
+        {
+          "incidentId": "HIST-011",
+          "similarity": 0.2932006567534737
+        },
+        {
+          "incidentId": "HIST-027",
+          "similarity": 0.2868621773858111
+        }
+      ],
+      "top1": true,
+      "top3": true
+    },
+    {
+      "query": "Generating a report freezes other HTTP requests and health checks",
+      "expected": "HIST-009",
+      "top": [
+        {
+          "incidentId": "HIST-009",
+          "similarity": 0.4938124959348471
+        },
+        {
+          "incidentId": "HIST-032",
+          "similarity": 0.4616591815010054
+        },
+        {
+          "incidentId": "HIST-008",
+          "similarity": 0.38176820141934553
+        }
+      ],
+      "top1": true,
+      "top3": true
+    },
+    {
+      "query": "Checkout waits too long for the shipping provider and times out",
+      "expected": "HIST-010",
+      "top": [
+        {
+          "incidentId": "HIST-010",
+          "similarity": 0.5803644171146053
+        },
+        {
+          "incidentId": "HIST-001",
+          "similarity": 0.4143391329817838
+        },
+        {
+          "incidentId": "HIST-032",
+          "similarity": 0.40464391309707826
+        }
+      ],
+      "top1": true,
+      "top3": true
+    },
+    {
+      "query": "Bulk JSON imports fail with HTTP 413 but smaller requests work",
+      "expected": "HIST-013",
+      "top": [
+        {
+          "incidentId": "HIST-013",
+          "similarity": 0.7388488382640847
+        },
+        {
+          "incidentId": "HIST-022",
+          "similarity": 0.39136724451750327
+        },
+        {
+          "incidentId": "HIST-008",
+          "similarity": 0.3560360609163414
+        }
+      ],
+      "top1": true,
+      "top3": true
+    },
+    {
+      "query": "New pods cannot download a container image because the tag is absent",
+      "expected": "HIST-017",
+      "top": [
+        {
+          "incidentId": "HIST-017",
+          "similarity": 0.6527510770572743
+        },
+        {
+          "incidentId": "HIST-021",
+          "similarity": 0.6388746117747063
+        },
+        {
+          "incidentId": "HIST-028",
+          "similarity": 0.4980515325835941
+        }
+      ],
+      "top1": true,
+      "top3": true
+    },
+    {
+      "query": "Readiness probe returns 404 after the health route changed",
+      "expected": "HIST-018",
+      "top": [
+        {
+          "incidentId": "HIST-018",
+          "similarity": 0.7740078262422616
+        },
+        {
+          "incidentId": "HIST-015",
+          "similarity": 0.4664745349121577
+        },
+        {
+          "incidentId": "HIST-034",
+          "similarity": 0.4257696512958054
+        }
+      ],
+      "top1": true,
+      "top3": true
+    },
+    {
+      "query": "Large CSV imports kill the worker after exceeding its memory limit",
+      "expected": "HIST-022",
+      "top": [
+        {
+          "incidentId": "HIST-022",
+          "similarity": 0.7214396031792445
+        },
+        {
+          "incidentId": "HIST-013",
+          "similarity": 0.45419861801186606
+        },
+        {
+          "incidentId": "HIST-025",
+          "similarity": 0.3830049358632804
+        }
+      ],
+      "top1": true,
+      "top3": true
+    },
+    {
+      "query": "Gateway exhausts open file handles because sockets are not closed",
+      "expected": "HIST-025",
+      "top": [
+        {
+          "incidentId": "HIST-025",
+          "similarity": 0.5994208984859044
+        },
+        {
+          "incidentId": "HIST-032",
+          "similarity": 0.29033195587105937
+        },
+        {
+          "incidentId": "HIST-034",
+          "similarity": 0.2573974735535142
+        }
+      ],
+      "top1": true,
+      "top3": true
+    },
+    {
+      "query": "JWT tokens are not yet active on a server with the wrong time",
+      "expected": "HIST-027",
+      "top": [
+        {
+          "incidentId": "HIST-027",
+          "similarity": 0.591303670882134
+        },
+        {
+          "incidentId": "HIST-037",
+          "similarity": 0.26301873809843834
+        },
+        {
+          "incidentId": "HIST-033",
+          "similarity": 0.2580137877955496
+        }
+      ],
+      "top1": true,
+      "top3": true
+    },
+    {
+      "query": "HTTPS requests fail because the remote certificate expired",
+      "expected": "HIST-030",
+      "top": [
+        {
+          "incidentId": "HIST-030",
+          "similarity": 0.6502018075634323
+        },
+        {
+          "incidentId": "HIST-012",
+          "similarity": 0.3086483081406875
+        },
+        {
+          "incidentId": "HIST-027",
+          "similarity": 0.3025160386780476
+        }
+      ],
+      "top1": true,
+      "top3": true
+    },
+    {
+      "query": "Browser preflight blocks the frontend origin from calling the API",
+      "expected": "HIST-033",
+      "top": [
+        {
+          "incidentId": "HIST-033",
+          "similarity": 0.7046945752927172
+        },
+        {
+          "incidentId": "HIST-019",
+          "similarity": 0.35897024515941756
+        },
+        {
+          "incidentId": "HIST-040",
+          "similarity": 0.3100626325913757
+        }
+      ],
+      "top1": true,
+      "top3": true
+    },
+    {
+      "query": "Many failed password attempts across different user accounts",
+      "expected": "HIST-035",
+      "top": [
+        {
+          "incidentId": "HIST-035",
+          "similarity": 0.5283854529221715
+        },
+        {
+          "incidentId": "HIST-036",
+          "similarity": 0.29958144492232397
+        },
+        {
+          "incidentId": "HIST-005",
+          "similarity": 0.2772503282870474
+        }
+      ],
+      "top1": true,
+      "top3": true
+    },
+    {
+      "query": "Changing an incident identifier exposes another tenant records",
+      "expected": "HIST-039",
+      "top": [
+        {
+          "incidentId": "HIST-039",
+          "similarity": 0.6894854386773024
+        },
+        {
+          "incidentId": "HIST-014",
+          "similarity": 0.2780440337874037
+        },
+        {
+          "incidentId": "HIST-006",
+          "similarity": 0.27260128727928146
+        }
+      ],
+      "top1": true,
+      "top3": true
+    },
+    {
+      "query": "User provided preview URLs can reach private internal network services",
+      "expected": "HIST-040",
+      "top": [
+        {
+          "incidentId": "HIST-040",
+          "similarity": 0.7298478166864018
+        },
+        {
+          "incidentId": "HIST-033",
+          "similarity": 0.2867143092259815
+        },
+        {
+          "incidentId": "HIST-037",
+          "similarity": 0.28193989863652497
+        }
+      ],
+      "top1": true,
+      "top3": true
+    }
+  ]
+}

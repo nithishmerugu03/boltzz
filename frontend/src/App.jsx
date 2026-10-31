@@ -1,7 +1,25 @@
-import { Link, Route, Routes } from 'react-router-dom';
+import { Link, Route, Routes, useParams } from 'react-router-dom';
 import IncidentList from './pages/IncidentList.jsx';
+import RcaSecurityDashboard from './pages/RcaSecurityDashboard.jsx';
 import Report from './pages/Report.jsx';
-import WarRoom from './pages/WarRoom.jsx';
+import WarRoom, { useReport } from './pages/WarRoom.jsx';
+
+// Feeds the workflow's rca_security_analysis output into the RCA & Security dashboard.
+function RcaSecurityRoute() {
+  const { id } = useParams();
+  const { report, error } = useReport(id);
+  return (
+    <>
+      <Link to={`/incidents/${id}`} className="text-sm text-blue-600 underline">← War room</Link>
+      <RcaSecurityDashboard
+        incident={report?.incident ?? null}
+        result={report?.incident?.rca_security_analysis ?? null}
+        loading={!report && !error}
+        error={error || null}
+      />
+    </>
+  );
+}
 
 export default function App() {
   return (
@@ -13,6 +31,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<IncidentList />} />
           <Route path="/incidents/:id" element={<WarRoom />} />
+          <Route path="/incidents/:id/rca" element={<RcaSecurityRoute />} />
           <Route path="/incidents/:id/report" element={<Report />} />
         </Routes>
       </main>

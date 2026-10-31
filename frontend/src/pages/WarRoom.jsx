@@ -71,6 +71,7 @@ export default function WarRoom() {
         actions={(
           <div className="flex gap-2">
             {canStart && <button onClick={start} className="rounded border border-slate-300 px-3 py-1 text-sm">{status.workflow_status === 'created' ? 'Start workflow' : 'Re-run workflow'}</button>}
+            <Link to={`/incidents/${id}/rca`} className="rounded border border-slate-300 px-3 py-1 text-sm">RCA &amp; Security</Link>
             <Link to={`/incidents/${id}/report`} className="rounded bg-blue-600 px-3 py-1 text-sm text-white">Final report</Link>
           </div>
         )}

@@ -112,3 +112,27 @@ test("explicitly marks missing Groq credentials while returning fallback finding
   assert.equal(result.details.mode, "RULE_BASED_FALLBACK");
   assert.ok(result.warnings.some((warning) => /GROQ_API_KEY is not configured/i.test(warning)));
 });
+
+test("handles invalid credentials, rate limits, and timeouts with an explicit fallback", async (t) => {
+  const failures = [
+    { name: "invalid key", error: Object.assign(new Error("unauthorized"), { status: 401 }), expected: /invalid API key/i },
+    { name: "rate limit", error: Object.assign(new Error("limited"), { status: 429 }), expected: /rate limit reached/i },
+    { name: "timeout", error: Object.assign(new Error("timed out"), { name: "TimeoutError" }), expected: /request timed out/i }
+  ];
+
+  for (const failure of failures) {
+    await t.test(failure.name, async () => {
+      const client = {
+        chat: {
+          completions: {
+            create: async () => { throw failure.error; }
+          }
+        }
+      };
+      const result = await runRcaAgent(knownIncidents[0].incident, [], { apiKey: "test-key", client });
+      assert.equal(result.details.mode, "RULE_BASED_FALLBACK");
+      assert.equal(result.details.category, "DATABASE_CONNECTION_EXHAUSTION");
+      assert.ok(result.warnings.some((warning) => failure.expected.test(warning)));
+    });
+  }
+});

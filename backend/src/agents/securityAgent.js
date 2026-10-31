@@ -47,6 +47,9 @@ function collectFindings(items) {
   const failedThreshold = configuredThreshold("SECURITY_FAILED_LOGIN_THRESHOLD", 5);
   const authSpikeThreshold = configuredThreshold("SECURITY_AUTH_SPIKE_THRESHOLD", 20);
   const windowMs = configuredThreshold("SECURITY_EVENT_WINDOW_MS", 5 * 60 * 1000, 60 * 1000);
+  const windowLabel = windowMs % 60000 === 0
+    ? `${windowMs / 60000}-minute window`
+    : `${windowMs}-millisecond window`;
   const authEvidence = items.filter((item) => AUTH_PATTERN.test(textFor(item)) || [401, 403].includes(statusCodeFor(item.raw)));
   const failedAuth = authEvidence.filter((item) =>
     FAILED_AUTH_PATTERN.test(textFor(item)) || [401, 403].includes(statusCodeFor(item.raw)));
@@ -65,7 +68,7 @@ function collectFindings(items) {
   for (const { ip, bucket, items: sourceEvents } of failedBySource.values()) {
     if (sourceEvents.length < failedThreshold) continue;
     const uniqueAccounts = new Set(sourceEvents.map((item) => accountFor(item.raw)).filter(Boolean));
-    const interval = bucket === "undated" ? "in the supplied events" : "within a five-minute window";
+    const interval = bucket === "undated" ? "in the supplied events" : `within the configured ${windowLabel}`;
     findings.push({
       category: "REPEATED_AUTHENTICATION_FAILURES",
       riskLevel: "HIGH",
@@ -140,7 +143,7 @@ function collectFindings(items) {
       category: "AUTHENTICATION_TRAFFIC_SPIKE",
       riskLevel: "MEDIUM",
       title: "High authentication request volume from one source",
-      explanation: `${sourceEvents.length} authentication-related events from one source were observed within a five-minute window; expected traffic baselines were not provided.`,
+      explanation: `${sourceEvents.length} authentication-related events from one source were observed within the configured ${windowLabel}; expected traffic baselines were not provided.`,
       evidenceIds: sourceEvents.map((item) => item.id).filter(Boolean),
       recommendations: [
         "Compare this source's authentication request rate with the service's normal baseline.",

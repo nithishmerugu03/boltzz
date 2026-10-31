@@ -113,10 +113,12 @@ export default function Report() {
   const rca = incident.rca_security_analysis;
   const kr = incident.knowledge_retrieval;
   const comm = incident.communication;
-  const root = rca?.data?.root_cause;
-  const security = rca?.data?.security_analysis;
-  const rcaFindings = (rca?.findings || []).filter((f) => !f.finding_id.startsWith('FIND-SEC'));
-  const secFindings = (rca?.findings || []).filter((f) => f.finding_id.startsWith('FIND-SEC'));
+  // Field names follow the rca_security_analysis module (backend/src/utils/agentResponse.js).
+  const rcaData = rca?.data || {};
+  const confidence = rcaData.root_cause_confidence;
+  const security = rcaData.security_analysis;
+  const rcaFindings = (rca?.findings || []).filter((f) => !f.finding_id.startsWith('FIND-SEC-'));
+  const secFindings = (rca?.findings || []).filter((f) => f.finding_id.startsWith('FIND-SEC-'));
 
   return (
     <div className="space-y-4">
@@ -157,18 +159,35 @@ export default function Report() {
       </Section>
 
       <Section title="Root cause analysis" output={rca} status={cs.rca_security_analysis}>
-        {root ? (
+        {rcaData.probable_root_cause ? (
           <p className="mb-2 text-sm">
-            <b>{root.status === 'confirmed' ? 'Confirmed' : 'Suspected'} root cause:</b> {root.description} — confidence {root.confidence == null ? 'unavailable' : `${Math.round(root.confidence * 100)}%`}
+            <b>Probable root cause (hypothesis, not confirmed):</b> {rcaData.probable_root_cause}
+            {' — '}category: {rcaData.root_cause_category || 'unavailable'}
+            {' — '}confidence: {Number.isFinite(confidence) ? `${Math.round(confidence * 100)}%` : 'unavailable'}
           </p>
-        ) : <Empty>No root cause stated.</Empty>}
+        ) : <Empty>Probable root cause not identified.</Empty>}
+        {rcaData.reasoning && <p className="mb-2 text-sm text-slate-600">{rcaData.reasoning}</p>}
         <FindingsList findings={rcaFindings} />
+        {rca?.recommendations?.length > 0 && (
+          <div className="mt-2 text-sm">
+            <h4 className="font-semibold text-slate-700">Validation steps</h4>
+            <ul className="list-disc pl-5">{rca.recommendations.map((r) => <li key={r.recommendation_id}>{r.action}</li>)}</ul>
+          </div>
+        )}
         <div className="mt-2"><EvidenceList evidence={rca?.evidence} /></div>
       </Section>
 
       <Section title="Security analysis" output={rca} status={cs.rca_security_analysis}>
-        <p className="mb-2 text-sm">{security?.summary || 'No security summary provided.'} {security && `(attack detected: ${security.attack_detected ? 'yes' : 'no'})`}</p>
-        <FindingsList findings={secFindings} />
+        {security ? (
+          <div className="mb-2 text-sm">
+            <p>Risk detected: <b>{security.risk_detected ? 'yes' : 'no'}</b> · Risk level: <b>{security.risk_level || 'unknown'}</b>
+              {security.threats?.length > 0 && <> · Threats: {security.threats.join(', ')}</>}</p>
+            {security.security_observations?.length > 0 && (
+              <ul className="mt-1 list-disc pl-5 text-slate-600">{security.security_observations.map((o, i) => <li key={i}>{o}</li>)}</ul>
+            )}
+          </div>
+        ) : <Empty>No security analysis provided.</Empty>}
+        {secFindings.length > 0 ? <FindingsList findings={secFindings} /> : <Empty>No security findings reported.</Empty>}
       </Section>
 
       <Section title="Similar historical incidents" output={kr} status={cs.knowledge_retrieval}>

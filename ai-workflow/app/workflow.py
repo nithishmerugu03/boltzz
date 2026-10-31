@@ -115,10 +115,11 @@ class WorkflowRunner:
         out = self._run_module(state, "rca_security_analysis")
         resp = out["rca_security_analysis"]
         if resp["status"] == "completed":
-            root = resp["data"].get("root_cause") or {}
+            data = resp["data"]
             out["audit_events"].append(self._event(
-                state, "RCA_GENERATED", root.get("description") or resp["summary"], "rca_security_analysis",
-                details={"root_cause_status": root.get("status"), "confidence": root.get("confidence")}))
+                state, "RCA_GENERATED", data.get("probable_root_cause") or resp["summary"], "rca_security_analysis",
+                details={k: data.get(k) for k in
+                         ("probable_root_cause", "root_cause_category", "root_cause_confidence")}))
         return out
 
     def knowledge_retrieval(self, state: IncidentState) -> dict:

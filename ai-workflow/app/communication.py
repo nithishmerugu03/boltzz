@@ -16,7 +16,8 @@ Write stakeholder updates using ONLY the facts in the provided JSON context.
 Rules:
 - Never invent errors, causes, impact, numbers, or timelines not present in the context.
 - If a module is not completed, say its information is unavailable.
-- A root cause with status "suspected" must be described as probable/suspected, never confirmed.
+- rca_security_analysis.data.probable_root_cause is a hypothesis: describe it as probable/suspected,
+  never as confirmed. If it is null, say the root cause has not been identified.
 - Recommendations are proposals. Never state an action was executed unless it is listed in
   resolution.executed_actions. Distinguish recommended, approved and executed actions.
 - If is_mock_data is true, begin every update with "[MOCK DATA]".
@@ -65,9 +66,12 @@ def _template_updates(ctx: dict) -> dict:
     prefix = "[MOCK DATA] " if ctx["is_mock_data"] else ""
     m = ctx["modules"]
     rca = m["rca_security_analysis"]
-    root = (rca.get("data", {}).get("root_cause") or {}) if rca["available"] else {}
-    cause = (f"{root.get('status', 'suspected')} root cause: {root['description']}"
-             if root.get("description") else "root cause: unavailable")
+    rca_data = rca.get("data", {}) if rca["available"] else {}
+    probable = rca_data.get("probable_root_cause")
+    confidence = rca_data.get("root_cause_confidence")
+    cause = (f"probable (unconfirmed) root cause: {probable}"
+             + (f" (confidence {round(confidence * 100)}%)" if isinstance(confidence, (int, float)) else "")
+             if probable else "root cause: not identified")
     recs = m["remediation"].get("recommendations", []) if m["remediation"]["available"] else []
     rec_text = "; ".join(r["action"] for r in recs) or "no remediation recommendations available"
     unavailable = [c for c, v in m.items() if not v["available"]]

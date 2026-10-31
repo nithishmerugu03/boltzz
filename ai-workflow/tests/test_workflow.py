@@ -70,6 +70,16 @@ def test_fixtures_are_valid_contracts():
         assert res["response"]["data"]["mock_fixture"] is True
 
 
+def test_rca_fixture_uses_rca_module_field_names():
+    """Mock RCA output must match backend/src/utils/agentResponse.js data keys."""
+    data = default_adapters("mock")["rca_security_analysis"].run({"incident_id": "INC-1"})["response"]["data"]
+    for key in ("probable_root_cause", "root_cause_category", "root_cause_confidence",
+                "affected_components", "security_analysis", "reasoning"):
+        assert key in data
+    assert set(data["security_analysis"]) == {"risk_detected", "risk_level", "threats", "security_observations"}
+    assert "root_cause" not in data
+
+
 def test_validation_rejects_bad_responses():
     good = make_error_response("INC-1", "log_analysis", "X", "y")
     assert validate_module_response(good, "INC-1", "log_analysis")[0] == []
@@ -117,6 +127,9 @@ def test_successful_workflow_and_audit_sequence(db):
     assert types[0] == "WORKFLOW_STARTED" and types[-1] == "WORKFLOW_COMPLETED"
     for t in ("RCA_GENERATED", "REMEDIATION_PROPOSED", "APPROVAL_REQUESTED"):
         assert t in types
+    rca_event = next(e for e in db.get_events(iid) if e["event_type"] == "RCA_GENERATED")
+    assert rca_event["details"] == {"probable_root_cause": "Database connection pool exhaustion in checkout-service",
+                                    "root_cause_category": "database", "root_cause_confidence": 0.86}
     assert "REMEDIATION_APPROVED" not in types and "INCIDENT_RESOLVED" not in types
     stored = db.get_incident(iid)
     assert stored["final_report"]["progress"] == 100
@@ -164,6 +177,17 @@ def test_template_fallback_is_labelled(monkeypatch):
     assert resp["status"] == "completed" and resp["data"]["generation_method"] == "template"
     assert resp["data"]["customer_update"].startswith("[MOCK DATA]")
     assert resp["data"]["resolution_summary"] is None
+
+
+def test_template_uses_probable_root_cause(monkeypatch):
+    monkeypatch.setenv("COMMUNICATION_FALLBACK", "template")
+    rca = default_adapters("mock")["rca_security_analysis"].run({"incident_id": "INC-1"})["response"]
+    state = {"incident_id": "INC-1", "execution_mode": "mock", "rca_security_analysis": rca,
+             "component_status": {"rca_security_analysis": "mock_completed"},
+             "incident_details": {"title": "Checkout failures", "description": "d", "severity": "high"}}
+    dev = generate_communication(state, failing_llm)["data"]["developer_update"]
+    assert "probable (unconfirmed) root cause: Database connection pool exhaustion" in dev
+    assert "confidence 86%" in dev
 
 
 def test_multiple_incidents_independent(db):

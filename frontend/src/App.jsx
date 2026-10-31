@@ -1,4 +1,5 @@
 import { Link, Route, Routes, useParams } from 'react-router-dom';
+import { MockBanner } from './components/ui.jsx';
 import IncidentList from './pages/IncidentList.jsx';
 import RcaSecurityDashboard from './pages/RcaSecurityDashboard.jsx';
 import Report from './pages/Report.jsx';
@@ -8,11 +9,14 @@ import WarRoom, { useReport } from './pages/WarRoom.jsx';
 function RcaSecurityRoute() {
   const { id } = useParams();
   const { report, error } = useReport(id);
+  const incident = report?.incident;
   return (
     <>
       <Link to={`/incidents/${id}`} className="text-sm text-blue-600 underline">← War room</Link>
+      <div className="mt-2"><MockBanner show={report?.status?.execution_mode === 'mock'} /></div>
       <RcaSecurityDashboard
-        incident={report?.incident ?? null}
+        // The dashboard reads a single `service`; the workflow stores a list of affected services.
+        incident={incident ? { ...incident, service: incident.affected_services?.[0] } : null}
         result={report?.incident?.rca_security_analysis ?? null}
         loading={!report && !error}
         error={error || null}

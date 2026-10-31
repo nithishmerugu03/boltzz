@@ -11,10 +11,10 @@ python -m venv .venv && .venv/Scripts/python -m pip install -r requirements.txt 
 cp .env.example .env        # set GROQ_API_KEY; MODULE_MODE=mock until teammates connect
 .venv/Scripts/python -m uvicorn app.main:app --port 8000
 
-# 2. Express gateway (port 4000) - forwards /api/* to the AI workflow service
+# 2. Express backend (port 5000) - forwards /api/workflow/* to the AI workflow service
 cd backend && npm install && npm start
 
-# 3. Frontend (port 5173) - proxies /api to :4000
+# 3. Frontend (port 5173) - proxies /api to :5000
 cd frontend && npm install && npm run dev
 
 # Tests (mock fixtures + stubbed LLM; needs local MongoDB, uses DB "aegisops_test")
@@ -51,7 +51,7 @@ rca `root_cause {description,status: suspected|confirmed,confidence}, security_a
 (security findings use `finding_id` prefix `FIND-SEC`); knowledge `similar_incidents [{incident_id,title,relevance_score,root_cause,resolution}]`;
 remediation `safety_checks [{recommendation_id,risk_level,check,passed}]`.
 
-## API (FastAPI; via gateway prefix `/api`)
+## API (FastAPI; via Express prefix `/api/workflow`)
 
 | Method | Path | Notes |
 |---|---|---|

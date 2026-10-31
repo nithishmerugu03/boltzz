@@ -1,6 +1,6 @@
-// All backend calls for incidents/workflow/audit. UI components never call fetch directly.
+// All War Room calls go through the Express gateway at /api/workflow -> ai-workflow service.
 async function request(path, options = {}) {
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`/api/workflow${path}`, {
     headers: { 'Content-Type': 'application/json' },
     ...options,
     body: options.body ? JSON.stringify(options.body) : undefined,

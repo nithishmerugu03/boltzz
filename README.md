@@ -2,17 +2,17 @@
 
 **Detect. Diagnose. Defend. Recover.**
 
-An AI-powered incident investigation and response platform proposed for the **HCLTech AI Future Ready FullStack Web Engineer Hackathon**.
+An AI-powered incident investigation and response platform proposed and partially implemented for the **HCLTech AI Future Ready FullStack Web Engineer Hackathon**.
 
 **Use case:** Autonomous Incident War Room Agent
 
-**Current status:** Planning and documentation. This repository contains only `README.md` and `.gitignore`. No application source, dependencies, schema, or tests are present. All application capabilities described below are **Planned**.
+**Current status:** Partial implementation. The RCA and Security module has backend agents, optional Groq-powered RCA, evidence validation, a prop-driven React dashboard, and focused tests. Shared orchestration, monitoring ingestion, RAG storage, remediation, approval, communications, and deployment remain planned.
 
 ## 1. Overview
 
 AegisOps is designed as an incident command centre where engineers can review operational signals, investigate probable causes, assess security concerns, and evaluate recovery actions in one place.
 
-Four specialised agents will collaborate through a backend orchestration layer. Retrieval-Augmented Generation (RAG) will supply historical incidents and runbooks, while human approval will govern executable remediation. Investigations will connect recommendations to evidence and record engineers' decisions.
+Five specialised agents are planned to collaborate through a backend orchestration layer. The RCA and Security agents are implemented as standalone exports; shared orchestration, the other agents, RAG retrieval, and human approval remain planned.
 
 ## 2. Problem statement
 
@@ -30,52 +30,54 @@ The design follows a **human-in-the-loop approach**. Operational changes will re
 
 ## 4. Key features
 
-All application features are **Planned**.
+RCA/Security investigation and its prop-driven review UI are implemented in this checkout; other listed features remain planned.
 
-| Feature | Intended behaviour |
+| Feature | Intended behaviour | Status |
 | --- | --- |
-| Unified intake | Receive alerts, tickets, logs, deployment events, and monitoring signals. |
-| Event correlation | Group evidence by service, timestamp, and trace identifier; identify affected services. |
-| Evidence-based investigation | Present probable causes, competing hypotheses, security indicators, and evidence gaps. |
-| Historical retrieval | Search incident reports and runbooks with embeddings and pgvector. |
-| Remediation recommendations | Present containment, recovery, prevention, risks, and verification steps. |
-| Human approval | Let an authorised engineer approve or reject the exact executable proposal. |
-| Live investigation view | Show a dashboard, timeline, RCA evidence viewer, approvals, and history with SSE updates. |
-| Communications and learning | Draft stakeholder updates, reports, and reusable knowledge articles. |
-| Audit history | Record evidence, findings, proposals, decisions, execution results, and observed outcomes. |
+| Unified intake | Receive alerts, tickets, logs, deployment events, and monitoring signals. | Planned |
+| Event correlation | Group evidence by service, timestamp, and trace identifier; identify affected services. | Planned |
+| Evidence-based investigation | Present probable causes, security indicators, and evidence gaps with source references. | RCA/Security module implemented; broader correlation planned |
+| Historical retrieval | Search incident reports and runbooks with embeddings and vector search. | Planned; RCA accepts retrieved context |
+| Remediation recommendations | Present containment, recovery, prevention, risks, and verification steps. | Planned |
+| Human approval | Let an authorised engineer approve or reject the exact executable proposal. | Planned |
+| Live investigation view | Show agent findings and source evidence in the dashboard. | RCA/Security panels implemented; War Room/SSE planned |
+| Communications and learning | Draft stakeholder updates, reports, and reusable knowledge articles. | Planned |
+| Audit history | Record evidence, findings, proposals, decisions, execution results, and observed outcomes. | Planned |
 
 ## 5. Multi-agent architecture
 
-**Planned:** A custom backend orchestrator will coordinate four agents using structured inputs and outputs. Straightforward thresholds and event grouping will use deterministic backend logic rather than unnecessary LLM calls.
+**Planned:** A custom backend orchestrator will coordinate five agents using structured inputs and outputs. The RCA and Security agents described below are implemented as standalone exports; the other agents and orchestration remain planned.
 
 | Agent | Responsibilities | Outputs and boundaries |
 | --- | --- | --- |
 | **1. Monitoring Agent** | Process logs, alerts, and metrics; correlate service names, timestamps, and trace identifiers; detect anomalies and affected services. | Structured incident summaries with evidence references. Deterministic logic handles straightforward thresholds and grouping. |
-| **2. Root Cause & Security Analysis Agent** | Construct timelines, retrieve similar incidents through RAG, compare root-cause hypotheses, and inspect possible security indicators. | Findings distinguish observations from hypotheses, cite supporting evidence, and identify security concerns and missing information. |
-| **3. Remediation Agent** | Interpret RCA findings, retrieve successful recovery procedures, and propose containment, recovery, prevention, operational risks, and verification steps. | Structured proposals for human review. No direct arbitrary command execution or unauthorised production changes. A separate deterministic backend policy validator inspects executable actions. |
-| **4. Communication Agent** | Draft technical summaries, stakeholder updates, progress explanations, post-incident reports, and knowledge articles. | Communications reflect verified incident status and observed recovery outcomes; they must not invent successful recovery. |
+| **2. Root Cause Analysis Agent** | Analyze operational evidence and supplied historical search results. | Implemented: probable cause hypotheses, validated source IDs, evidence-support factors, and validation steps. |
+| **3. Security Analysis Agent** | Inspect authentication and request evidence for suspicious patterns and service degradation. | Implemented: deterministic evidence-linked findings; indicators are not treated as confirmed attacks. |
+| **4. Remediation Agent** | Interpret RCA findings, retrieve successful recovery procedures, and propose containment, recovery, prevention, operational risks, and verification steps. | Planned. No direct arbitrary command execution or unauthorised production changes. |
+| **5. Communication Agent** | Draft technical summaries, stakeholder updates, progress explanations, post-incident reports, and knowledge articles. | Planned; communications must reflect verified incident status and observed outcomes. |
 
-Groq-hosted LLM reasoning and generation are planned. A separate embedding model/provider will support retrieval; its selection remains open. Any future model-generated confidence scores must not be presented as calibrated probabilities without validation.
+Groq-hosted reasoning is optionally integrated in the RCA agent when a backend key is configured; it falls back explicitly when unavailable. Historical retrieval remains external to this module. The evidence-support score is a heuristic, not a calibrated probability.
 
 ## 6. System architecture diagram
 
-This is the **proposed architecture**. All components and connections are **Planned**.
+This is the **proposed platform architecture**. The RCA/Security agents and review panels exist; the shared services and remaining integrations are **Planned**.
 
 ```mermaid
 flowchart TD
     Sources[Logs, alerts, metrics, tickets, deployments, security events]
     Engineer[Authorised engineer]
-    UI[React + Vite + Tailwind dashboard]
-    Auth[Supabase Auth]
+    UI[React + Vite RCA/Security panels]
+    Auth[Authentication provider - planned]
 
     subgraph Backend[Node.js + Express backend]
         API[REST APIs + Zod validation + role-based authorisation]
         SSE[SSE investigation updates]
         Orch[Custom agent orchestrator]
         Monitor[1. Monitoring Agent]
-        RCA[2. Root Cause and Security Analysis Agent]
-        Remediation[3. Remediation Agent]
-        Comms[4. Communication Agent]
+        RCA[2. Root Cause Analysis Agent]
+        Security[3. Security Analysis Agent]
+        Remediation[4. Remediation Agent]
+        Comms[5. Communication Agent]
         RAG[RAG retrieval service]
         Policy[Deterministic proposal policy validator]
         Approval[Exact-action human approval]
@@ -86,7 +88,7 @@ flowchart TD
 
     LLM[Groq-hosted LLM]
     Embeddings[Separate embedding model/provider]
-    DB[(Supabase PostgreSQL + pgvector)]
+    DB[(MongoDB Atlas + Vector Search)]
     Knowledge[Historical incidents + runbooks]
     Demo[Authorised demonstration environment]
 
@@ -98,6 +100,7 @@ flowchart TD
     API --> Orch
     Orch <--> Monitor
     Orch <--> RCA
+    Orch <--> Security
     Orch <--> Remediation
     Orch <--> Comms
     Orch <--> LLM
@@ -130,11 +133,11 @@ Rejected, invalid, or unauthorised actions must stop without execution. The exec
 
 ## 7. End-to-end incident workflow
 
-Each step is **Planned**.
+The end-to-end workflow remains **Planned**; the RCA/Security agent calls and review panels are implemented independently.
 
 1. **Incident intake:** Receive an alert, ticket, application log, deployment event, or monitoring signal.
 2. **Event correlation:** The Monitoring Agent groups related events and identifies affected services.
-3. **Investigation:** The RCA & Security Analysis Agent examines technical failure mechanisms and possible security threats.
+3. **Investigation:** The RCA Agent examines technical failure mechanisms and the Security Agent checks supplied evidence for risk indicators.
 4. **Historical knowledge retrieval:** Search similar incidents and runbooks using semantic retrieval to inform the investigation.
 5. **Root cause findings:** Present probable causes, supporting evidence, alternative hypotheses, security concerns, and missing information.
 6. **Remediation recommendation:** Generate corrective actions, risks, and verification steps. Validate executable proposals against backend policy.
@@ -145,27 +148,27 @@ Each step is **Planned**.
 
 ## 8. Technology stack
 
-No runtime technology below is implemented. A Node-oriented `.gitignore` does not establish an installed application stack.
+The table distinguishes this module's implemented dependencies from the wider platform proposal.
 
 | Layer | Proposed technology and purpose | Status |
 | --- | --- | --- |
-| Frontend | React.js, Vite, Tailwind CSS for dashboard, timeline, evidence, approvals, and history | Planned |
-| Backend | Node.js and Express.js for REST APIs and orchestration | Planned |
+| Frontend | React.js, Vite, and Lucide React for RCA/Security review panels | Implemented with CSS; host API/navigation integration planned |
+| Backend | Node.js ES modules for RCA/Security agent exports | Implemented; Express REST APIs and orchestration planned |
 | Live updates | Server-Sent Events (SSE) for investigation progress | Planned |
-| Validation | Zod for request and response validation | Planned |
-| AI reasoning | Groq-hosted LLM and structured outputs | Planned; model to be selected |
+| Validation | Zod for Groq RCA output validation and evidence-reference checks | Implemented for this module |
+| AI reasoning | Groq-hosted LLM and structured RCA output | Optional RCA integration; live API behavior requires credentials |
 | Agent coordination | Custom orchestration | Planned |
 | Embeddings | Separate embedding model/provider for semantic retrieval | Planned; provider/model to be selected |
-| Data and retrieval | Supabase PostgreSQL and pgvector for data and vector search | Planned |
-| Authentication | Supabase Auth | Planned |
+| Data and retrieval | MongoDB Atlas Vector Search for incident/runbook retrieval | Planned; RCA accepts externally retrieved results |
+| Authentication | Provider to be selected by the team | Planned |
 | Security controls | Backend role checks, human approval, remediation allowlist, audit logging | Planned |
 | Frontend hosting | Vercel | Planned |
 | Backend hosting | Render | Planned |
-| Database/auth hosting | Supabase | Planned |
+| Database hosting | MongoDB Atlas | Planned |
 
 ## 9. Example incident scenario
 
-**Illustrative scenario only. This is not an implemented or successfully tested feature.**
+**Illustrative scenario only. The full workflow is not an implemented or end-to-end tested feature.**
 
 A payment application starts returning HTTP 500 errors shortly after a deployment. Evidence includes a recent deployment event, increasing database connection utilisation, connection pool exhaustion errors, an increasing payment API failure rate, and a critical service health alert.
 
@@ -177,15 +180,15 @@ If controlled execution is implemented, the demo could simulate the approved rol
 
 ## 10. Functional requirements coverage
 
-This maps design intent to requirements, not delivered functionality.
+This maps design intent to requirements and notes the current RCA/Security module coverage.
 
 | ID | Requirement | Planned approach | Current status |
 | --- | --- | --- | --- |
 | FR-01 | Incident Intake | Validated backend intake of operational signals | Planned |
 | FR-02 | Event Correlation | Monitoring Agent with deterministic grouping and thresholds | Planned |
-| FR-03 | Root Cause Analysis | Evidence-linked hypotheses and security investigation | Planned |
-| FR-04 | Multi-Agent Investigation | Orchestrator coordinating four specialised agents | Planned |
-| FR-05 | Knowledge Retrieval | Embeddings, incident/runbook corpus, and pgvector search | Planned |
+| FR-03 | Root Cause Analysis | Evidence-linked hypotheses and security investigation | RCA/Security module implemented; orchestrator integration planned |
+| FR-04 | Multi-Agent Investigation | Orchestrator coordinating five specialised agents | Planned |
+| FR-05 | Knowledge Retrieval | Embeddings, incident/runbook corpus, and MongoDB Atlas Vector Search | Planned |
 | FR-06 | Remediation Recommendation | Structured proposals with risks and verification steps | Planned |
 | FR-07 | Stakeholder Communication | Communication Agent grounded in verified status | Planned |
 | FR-08 | Human Approval Workflow | Backend role checks, exact-action approval, and policy enforcement | Planned |
@@ -194,82 +197,100 @@ This maps design intent to requirements, not delivered functionality.
 
 ## 11. Repository structure
 
-Actual contents, excluding Git internals:
+Key module files, excluding dependencies and generated output:
 
 ```text
 hcl-hackathon/
 |-- .gitignore
+|-- backend/
+|   |-- src/agents/{rcaAgent,securityAgent}.js
+|   |-- src/utils/incidentEvidence.js
+|   |-- tests/
+|   `-- scripts/evaluateRca.js
+|-- docs/
+|   |-- ALOK_RCA_SECURITY_EVALUATION.md
+|   |-- api-contracts.md
+|   `-- architecture.md
+|-- frontend/
+|   `-- src/{pages,components}/
 `-- README.md
 ```
 
-This directory is the Git repository root inside the enclosing workspace. No frontend/backend directories, package manifests, lockfiles, migrations, environment templates, or test files exist. The source layout remains to be decided.
+The backend and frontend have independent package manifests and lockfiles. Database migrations and shared orchestration are not implemented.
 
 ## 12. Prerequisites
 
-For this documentation-only checkout, use Git and a text editor. A Mermaid-capable Markdown viewer can display the diagram.
+To run and test the implemented module, install Node.js and npm. A Mermaid-capable Markdown viewer can display the proposed architecture diagram.
 
-**Planned application prerequisites:**
+**Additional planned platform prerequisites:**
 
 - Node.js and a package manager; supported versions and package manager are not yet defined.
-- A Supabase project for PostgreSQL, pgvector, and authentication.
-- Groq credentials and a selected reasoning model.
+- MongoDB Atlas for the planned knowledge/RAG integration.
+- Optional Groq credentials and a selected reasoning model for live RCA.
 - Access to the separately selected embedding model/provider.
 - An authorised demonstration environment if controlled execution is implemented.
 
 ## 13. Installation and local setup
 
-There is no installable application yet. From the existing repository root, inspect the checkout with:
+Install the independently managed frontend and backend dependencies from the repository root:
 
-```sh
-git status --short
-git ls-files
+```powershell
+Push-Location .\backend
+npm install
+Pop-Location
+
+Push-Location .\frontend
+npm install
+Pop-Location
 ```
 
-Open `README.md` in your editor or GitHub. No dependency installation or database setup is currently available.
-
-**Pending implementation:** package installation commands, source directories, schema/migrations, pgvector configuration, authentication setup, and demonstration data. These must be documented from the eventual repository files and scripts before being presented as runnable instructions.
+`backend/.env.example` documents optional settings. Set them in the shell or host environment when integrating the agents; this standalone module does not load `.env` files itself. No database setup is needed by these agents.
 
 ## 14. Environment variables
 
-No environment variable names are defined in source, and no `.env.example` exists. Exact names and values cannot yet be documented.
+The backend template is `backend/.env.example`. The RCA key is optional; do not expose it in frontend configuration.
 
-| Planned configuration | Information still needed |
+| Variable | Purpose and default |
 | --- | --- |
-| Supabase database and authentication | Variable names, connection settings, and frontend/backend scope |
-| Groq | Credential variable names and reasoning model |
-| Embedding provider | Provider, credential names, model, and vector dimensions |
-| Application runtime | Ports, allowed origins, and frontend/backend connection settings |
-| Controlled execution | Permitted demo targets, allowlisted actions, and policy settings |
+| `GROQ_API_KEY` | Optional server-side Groq credential; absent key selects explicit local fallback |
+| `GROQ_MODEL` | Optional model override; defaults to `llama-3.3-70b-versatile` |
+| `GROQ_TIMEOUT_MS` | Groq request timeout; defaults to `15000` |
+| `SECURITY_FAILED_LOGIN_THRESHOLD` | Repeated failure threshold; defaults to `5` |
+| `SECURITY_AUTH_SPIKE_THRESHOLD` | Request spike threshold; defaults to `20` |
+| `SECURITY_EVENT_WINDOW_MS` | Security event window; defaults to `300000` |
 
-The existing `.gitignore` excludes `.env` and `.env.*` while allowing `.env.example`. Add a documented placeholder template when configuration is implemented. Keep privileged database credentials and AI provider secrets server-side and outside version control; do not expose them through frontend configuration.
+The existing `.gitignore` excludes `.env` and `.env.*` while allowing `.env.example`. Keep provider secrets server-side and outside version control.
 
 ## 15. Running the application
 
-**Not available yet.** There are no package manifests, start scripts, services, or entry points. No runnable application or deployed demo URL is available in this repository.
+The standalone RCA/Security panels can be previewed with Vite:
 
-Frontend/backend start commands, local URLs, database preparation, and demo execution instructions must be added once implementation exists.
+```powershell
+Push-Location .\frontend
+npm run dev
+Pop-Location
+```
+
+The UI is prop-driven and initially displays its no-investigation state. The host orchestrator must supply agent results; this module does not define an HTTP service or demo dataset.
 
 ## 16. Testing
 
-No test framework, scripts, fixtures, or application tests are present. No application test results, performance benchmarks, or recovery-time measurements are available.
+Run the backend tests and deterministic fixture evaluation with:
 
-**Planned validation:**
+```powershell
+Push-Location .\backend
+npm test
+npm run evaluate:rca
+Pop-Location
+```
 
-- Intake validation and deterministic correlation against known event fixtures.
-- Structured agent outputs, evidence references, and observation/hypothesis separation.
-- Retrieval relevance against labelled historical incidents and runbooks.
-- Authorisation and approval enforcement, including rejected, altered, and non-allowlisted actions.
-- Controlled execution and verification for successful, failed, and inconclusive demo outcomes.
-- SSE progress, persistent audit records, and communications reflecting verified status.
-- An end-to-end payment incident demonstration with documented inputs and expected observations.
-
-Executable test commands and results will be documented when tests are implemented.
+The current deterministic suite covers five synthetic RCA categories, evidence provenance, Groq response validation with a stub, and Security Agent cases. Current results are in [docs/ALOK_RCA_SECURITY_EVALUATION.md](./docs/ALOK_RCA_SECURITY_EVALUATION.md); they are not live-LLM or production accuracy results. Live Groq evaluation is opt-in with `npm run evaluate:rca -- --live` and a configured backend key.
 
 ## 17. Security and human approval model
 
-All controls below are **Planned**; enforcement code is absent.
+The RCA and Security module's source-reference validation, response-schema validation, and rule-based findings are implemented. The following platform controls remain planned:
 
-- **Authentication:** Supabase Auth establishes identity.
+- **Authentication:** An authentication provider and role model remain to be selected and implemented.
 - **Backend authorisation:** Server-side roles govern sensitive operations; UI controls alone cannot grant permission.
 - **Exact-action approval:** An authorised engineer reviews the action, target, parameters, risks, and verification steps. A changed proposal requires fresh approval.
 - **Deterministic policy validation:** A separate backend validator checks executable proposals against server-side allowlists and permitted demo targets. Model output cannot grant execution permission.
@@ -286,17 +307,19 @@ Autonomous repair of real production environments is not an implemented capabili
 | --- | --- | --- |
 | Documentation | Present | This README describes the proposal and known gaps |
 | Ignore configuration | Present | `.gitignore` covers dependencies, builds, logs, and environment files |
-| Frontend/backend | Planned | No source, entry points, or package manifests |
-| Four-agent workflow | Planned | No agents, orchestrator, or model integration |
+| Frontend/backend | Partial | RCA/Security agents and prop-driven UI exist; shared API and orchestration are not implemented |
+| RCA and Security | Implemented | Evidence-aware RCA fallback/optional Groq and deterministic security findings |
+| Remaining agents/platform services | Planned | Monitoring, remediation, communication, and shared orchestration remain to be integrated |
 | Database, authentication, RAG | Planned | No schema, migrations, provider configuration, or retrieval code |
 | Approval, policy, execution, audit | Planned | No implementation |
-| Tests and deployment | Planned | No tests or deployment configuration |
+| Module tests/evaluation | Implemented | Focused tests and five labeled synthetic RCA cases |
+| Deployment | Planned | No deployment configuration |
 
-No partially implemented application features were found. This repository currently documents a proposal rather than a runnable prototype.
+The RCA/Security UI can build and run independently, but the complete incident-management platform is not yet runnable end to end.
 
 ## 19. Future enhancements
 
-The initial roadmap is to implement validated intake and deterministic correlation, build the dashboard and orchestrator, connect evidence-grounded investigation with RAG, then add remediation proposals, approvals, demo execution, recovery verification, and incident learning.
+The next roadmap steps are to integrate validated intake and deterministic correlation with the implemented RCA/Security agents, connect historical retrieval and the host dashboard, then add remediation proposals, approvals, demo execution, recovery verification, and incident learning.
 
 Potential later enhancements, subject to scope confirmation, include additional operational connectors, broader incident evaluation datasets, retrieval relevance evaluation, and richer investigation history. Performance claims should follow reproducible experiments.
 
@@ -306,7 +329,7 @@ Potential later enhancements, subject to scope confirmation, include additional 
 
 **Hackathon:** HCLTech AI Future Ready FullStack Web Engineer Hackathon.
 
-The proposed design names React, Vite, Tailwind CSS, Node.js, Express, Zod, Groq, Supabase, PostgreSQL, pgvector, Vercel, and Render as intended technologies and services. Inclusion does not imply implemented integrations, sponsorship, or endorsement.
+The proposed wider platform uses Node.js, Express, MongoDB Atlas Vector Search, and Groq; the RCA/Security frontend uses React, Vite, Lucide React, and CSS. Remaining hosting and authentication choices are planned. Inclusion does not imply sponsorship or endorsement.
 
 ## 21. Information to confirm
 

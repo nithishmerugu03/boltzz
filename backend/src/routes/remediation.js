@@ -1,8 +1,8 @@
-import { Router } from 'express';
-import RemediationPlan from '../models/RemediationPlan.js';
-import { createPlan, inputErrors, normalizeRcaInput, reviewStep, updateStep } from '../services/remediationService.js';
-import { validateAgainstRunbooks } from '../services/runbooks.js';
-import { errorEnvelope, successEnvelope } from '../services/responseContract.js';
+const { Router } = require('express');
+const RemediationPlan = require('../models/RemediationPlan.js');
+const { createPlan, inputErrors, normalizeRcaInput, reviewStep, updateStep } = require('../services/remediationService.js');
+const { validateAgainstRunbooks } = require('../services/runbooks.js');
+const { errorEnvelope, successEnvelope } = require('../services/responseContract.js');
 
 const router = Router();
 const requireDatabase = (req, res, next) => {
@@ -65,4 +65,4 @@ router.post('/:planId/review', requireDatabase, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-export default router;
+module.exports = router;

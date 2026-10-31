@@ -1,9 +1,9 @@
-import 'dotenv/config';
-import express from 'express';
-import cors from 'cors';
-import mongoose from 'mongoose';
-import remediationRoutes from './routes/remediation.js';
-import { errorEnvelope, successEnvelope } from './services/responseContract.js';
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const mongoose = require('mongoose');
+const remediationRoutes = require('./routes/remediation.js');
+const { errorEnvelope, successEnvelope } = require('./services/responseContract.js');
 
 const app = express();
 app.use(cors({ origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173' }));
@@ -25,4 +25,4 @@ if (process.env.MONGODB_URI) {
 } else console.warn('MONGODB_URI is not configured; persistence APIs will return 503.');
 
 app.listen(port, () => console.log(`Remediation API listening on http://localhost:${port}`));
-export default app;
+module.exports = app;

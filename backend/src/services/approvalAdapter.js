@@ -1,5 +1,5 @@
 /** Replace this adapter with Shaanvi's orchestration API when its contract is available. */
-export class LocalReviewAdapter {
+class LocalReviewAdapter {
   mode = 'LOCAL_TEMPORARY';
   async submitReview({ plan, step, decision, reason, reviewer }) {
     // This records a local module review decision only. It is not an orchestration approval.
@@ -11,3 +11,5 @@ export class LocalReviewAdapter {
     return { mode: this.mode, integrated: false, message: 'Temporary local review recorded; Shaanvi workflow is not connected.' };
   }
 }
+
+module.exports = { LocalReviewAdapter };

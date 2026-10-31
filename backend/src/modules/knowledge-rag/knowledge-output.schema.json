@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AegisOps knowledge module output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["incident_id", "component", "status", "timestamp", "summary", "findings", "evidence", "recommendations", "data", "error"],
+  "properties": {
+    "incident_id": { "type": ["string", "null"] },
+    "component": { "const": "knowledge" },
+    "status": { "enum": ["completed", "in_progress", "failed"] },
+    "timestamp": { "type": "string", "format": "date-time", "pattern": "Z$" },
+    "summary": { "type": "string" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["finding_id", "title", "description", "severity", "confidence"],
+        "properties": {
+          "finding_id": { "type": "string" }, "title": { "type": "string" }, "description": { "type": "string" },
+          "severity": { "enum": ["critical", "high", "medium", "low", "info"] },
+          "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["source", "reference", "content", "relevance"],
+        "properties": {
+          "source": { "type": "string" }, "reference": { "type": "string" },
+          "content": { "type": "string" }, "relevance": { "type": "string" }
+        }
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["recommendation_id", "action", "reason", "priority", "requires_approval"],
+        "properties": {
+          "recommendation_id": { "type": "string" }, "action": { "type": "string" },
+          "reason": { "type": "string" }, "priority": { "type": "string" }, "requires_approval": { "const": true }
+        }
+      }
+    },
+    "data": {
+      "type": "object", "additionalProperties": false,
+      "required": ["query", "retrieved_incidents", "retrieval_count"],
+      "properties": {
+        "query": { "type": ["string", "null"] },
+        "retrieval_count": { "type": "integer", "minimum": 0 },
+        "retrieved_incidents": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["incident_id", "title", "description", "similarity_score", "resolution"],
+            "properties": {
+              "incident_id": { "type": "string" }, "title": { "type": ["string", "null"] },
+              "description": { "type": ["string", "null"] },
+              "similarity_score": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+              "resolution": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["code", "message", "details"],
+          "properties": { "code": { "type": "string" }, "message": { "type": "string" }, "details": { "type": "null" } }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "failed" } } },
+      "then": { "properties": { "error": { "type": "object" } } },
+      "else": { "properties": { "error": { "type": "null" } } }
+    }
+  ]
+}

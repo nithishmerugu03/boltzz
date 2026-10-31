@@ -1,4 +1,4 @@
-import { validateSteps } from '../services/safety.js';
+const { validateSteps } = require('../services/safety.js');
 
 function paymentPoolSteps() {
   return [
@@ -10,7 +10,7 @@ function paymentPoolSteps() {
   ];
 }
 
-export function deterministicSteps(input) {
+function deterministicSteps(input) {
   const source = `${input.rootCause} ${(input.evidence || []).join(' ')}`.toLowerCase();
   if (/connection|pool|database|payment/.test(source)) return paymentPoolSteps();
   return [
@@ -39,7 +39,7 @@ async function groqSteps(input) {
   return { steps: parsed.steps, provider: 'GROQ', model, fallbackUsed: false };
 }
 
-export async function generateRemediation(input) {
+async function generateRemediation(input) {
   let generated;
   try { generated = await groqSteps(input); }
   catch (error) { generated = { steps: deterministicSteps(input), provider: 'DETERMINISTIC', model: null, fallbackUsed: true, providerError: error.message }; }
@@ -52,3 +52,5 @@ export async function generateRemediation(input) {
     return { ...checked, generation: { provider: 'DETERMINISTIC', model: null, fallbackUsed: true }, providerError: `AI output rejected by schema validation: ${error.message}` };
   }
 }
+
+module.exports = { deterministicSteps, generateRemediation };

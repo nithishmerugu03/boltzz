@@ -2,7 +2,7 @@ const highPatterns = [/rollback/i, /restart (?:the )?production/i, /production d
 const mediumPatterns = [/change|increase|decrease|modify|update|reconfigure|tune/i];
 const blockedPatterns = [/drop database|truncate table|delete all|disable authentication|disable.*security|wipe/i];
 
-export function classifyRisk(step) {
+function classifyRisk(step) {
   const text = `${step.title || ''} ${step.description || ''} ${step.actionType || ''}`;
   if (blockedPatterns.some((p) => p.test(text))) return { riskLevel: 'HIGH', safetyStatus: 'BLOCKED', requiresApproval: true, warning: 'Potentially destructive or security disabling action blocked by policy.' };
   if (step.actionType === 'ROLLBACK' || highPatterns.some((p) => p.test(text))) return { riskLevel: 'HIGH', safetyStatus: 'FLAGGED', requiresApproval: true, warning: 'High risk: requires explicit engineer approval. No production action will be executed.' };
@@ -10,7 +10,7 @@ export function classifyRisk(step) {
   return { riskLevel: 'LOW', safetyStatus: 'ALLOWED', requiresApproval: false };
 }
 
-export function validateSteps(input) {
+function validateSteps(input) {
   const warnings = [];
   const steps = input.map((raw, i) => {
     if (!raw || typeof raw !== 'object') throw new Error(`Step ${i + 1} must be an object.`);
@@ -23,3 +23,5 @@ export function validateSteps(input) {
   });
   return { steps, warnings };
 }
+
+module.exports = { classifyRisk, validateSteps };

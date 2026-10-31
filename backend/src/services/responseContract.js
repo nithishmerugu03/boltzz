@@ -65,7 +65,7 @@ function recommendationsFor(planLike) {
   }));
 }
 
-export function successEnvelope({ incidentId = null, status = 'completed', summary, plan = null, data = {}, evidence, findings, recommendations }) {
+function successEnvelope({ incidentId = null, status = 'completed', summary, plan = null, data = {}, evidence, findings, recommendations }) {
   const p = plain(plan);
   return {
     incident_id: incidentId ?? p?.incidentId ?? null,
@@ -81,7 +81,7 @@ export function successEnvelope({ incidentId = null, status = 'completed', summa
   };
 }
 
-export function errorEnvelope({ incidentId = null, status = 500, message = 'The remediation request could not be completed.' }) {
+function errorEnvelope({ incidentId = null, status = 500, message = 'The remediation request could not be completed.' }) {
   const codes = { 400: 'VALIDATION_ERROR', 404: 'NOT_FOUND', 409: 'SAFETY_POLICY_REJECTED', 503: 'SERVICE_UNAVAILABLE' };
   return {
     incident_id: incidentId ?? null,
@@ -93,3 +93,5 @@ export function errorEnvelope({ incidentId = null, status = 500, message = 'The 
     error: { code: codes[status] || 'INTERNAL_ERROR', message, details: null }
   };
 }
+
+module.exports = { successEnvelope, errorEnvelope };

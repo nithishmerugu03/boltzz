@@ -1,9 +1,9 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { classifyRisk, validateSteps } from '../src/services/safety.js';
-import { deterministicSteps, generateRemediation } from '../src/agents/remediationAgent.js';
-import { validateAgainstRunbooks } from '../src/services/runbooks.js';
-import { errorEnvelope, successEnvelope } from '../src/services/responseContract.js';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { classifyRisk, validateSteps } = require('../src/services/safety.js');
+const { deterministicSteps, generateRemediation } = require('../src/agents/remediationAgent.js');
+const { validateAgainstRunbooks } = require('../src/services/runbooks.js');
+const { errorEnvelope, successEnvelope } = require('../src/services/responseContract.js');
 
 test('risk is independently assigned for diagnostic, config, and rollback actions', () => {
   assert.equal(classifyRisk({ title: 'Inspect active connections', actionType: 'DIAGNOSTIC' }).riskLevel, 'LOW');

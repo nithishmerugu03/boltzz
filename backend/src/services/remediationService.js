@@ -1,10 +1,10 @@
-import RemediationPlan from '../models/RemediationPlan.js';
-import { generateRemediation } from '../agents/remediationAgent.js';
-import { validateAgainstRunbooks } from './runbooks.js';
-import { LocalReviewAdapter } from './approvalAdapter.js';
+const RemediationPlan = require('../models/RemediationPlan.js');
+const { generateRemediation } = require('../agents/remediationAgent.js');
+const { validateAgainstRunbooks } = require('./runbooks.js');
+const { LocalReviewAdapter } = require('./approvalAdapter.js');
 
 const reviewAdapter = new LocalReviewAdapter();
-export const inputErrors = (body) => {
+const inputErrors = (body) => {
   const errors = [];
   if (!body || typeof body !== 'object' || Array.isArray(body)) return ['Request body must be a JSON object.'];
   const incidentId = body.incident_id ?? body.incidentId;
@@ -17,7 +17,7 @@ export const inputErrors = (body) => {
   return errors;
 };
 
-export function normalizeRcaInput(body) {
+function normalizeRcaInput(body) {
   return {
     ...body,
     incidentId: body.incident_id ?? body.incidentId,
@@ -29,7 +29,7 @@ export function normalizeRcaInput(body) {
   };
 }
 
-export async function createPlan(input) {
+async function createPlan(input) {
   const result = await generateRemediation(input);
   const runbookValidation = await validateAgainstRunbooks(result.steps, input.rootCause, input.evidence || []);
   const warnings = [...result.warnings];
@@ -44,7 +44,7 @@ export async function createPlan(input) {
   return plan;
 }
 
-export async function updateStep(planId, stepId, status) {
+async function updateStep(planId, stepId, status) {
   if (!['REVIEWED', 'COMPLETED'].includes(status)) throw Object.assign(new Error('status must be REVIEWED or COMPLETED.'), { statusCode: 400 });
   const plan = await RemediationPlan.findById(planId);
   if (!plan) throw Object.assign(new Error('Remediation plan not found.'), { statusCode: 404 });
@@ -58,7 +58,7 @@ export async function updateStep(planId, stepId, status) {
   await plan.save(); return plan;
 }
 
-export async function reviewStep(planId, body) {
+async function reviewStep(planId, body) {
   const { stepId, decision, reason, reviewer } = body || {};
   if (!stepId || !['APPROVE', 'REJECT', 'REQUEST_CHANGES'].includes(decision) || typeof reviewer !== 'string' || !reviewer.trim()) throw Object.assign(new Error('stepId, reviewer, and a valid decision are required.'), { statusCode: 400 });
   if (decision !== 'APPROVE' && (typeof reason !== 'string' || !reason.trim())) throw Object.assign(new Error('A rejection or change request requires a reason.'), { statusCode: 400 });
@@ -73,3 +73,5 @@ export async function reviewStep(planId, body) {
   await plan.save();
   return { plan, integration };
 }
+
+module.exports = { inputErrors, normalizeRcaInput, createPlan, updateStep, reviewStep };

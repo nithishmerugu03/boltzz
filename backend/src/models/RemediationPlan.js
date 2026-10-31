@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const stepSchema = new mongoose.Schema({
   stepNumber: { type: Number, required: true }, title: { type: String, required: true },
@@ -22,4 +22,4 @@ const planSchema = new mongoose.Schema({
   auditReferences: [String]
 }, { timestamps: true, minimize: false });
 
-export default mongoose.models.RemediationPlan || mongoose.model('RemediationPlan', planSchema);
+module.exports = mongoose.models.RemediationPlan || mongoose.model('RemediationPlan', planSchema);

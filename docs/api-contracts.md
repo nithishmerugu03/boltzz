@@ -125,4 +125,20 @@ Detection rules identify possible anomalies, not confirmed attacks. Missing secu
 - **Monitoring/log processing:** provide parsed events and evidence identifiers; this module does not parse raw uploaded files or replace event correlation.
 - **Knowledge/RAG:** provide retrieved results as the second argument to `runRcaAgent`; this module does not connect to MongoDB or implement vector search.
 - **Remediation:** consume RCA `details.probableRootCause`, `details.explanation`, `evidenceIds`, `details.validationSteps`, and Security `details.findings`/`details.riskLevel`. These agents do not execute or approve remediation.
-- **Orchestration/UI:** call both exports and pass results and the original incident into the React components as props. No HTTP endpoint or application navigation is defined here.
+- **Orchestration/UI:** call both exports and pass results and the original incident into the React components as props. No HTTP endpoint or application navigation is defined here. A host route can compose the pages directly:
+
+```jsx
+import RCAAnalysis from "../pages/RCAAnalysis.jsx";
+import SecurityFindings from "../pages/SecurityFindings.jsx";
+
+export function IncidentInvestigation({ incident, rcaResult, securityResult, loading, error }) {
+  return (
+    <>
+      <RCAAnalysis incident={incident} result={rcaResult} loading={loading} error={error} />
+      <SecurityFindings result={securityResult} loading={loading} error={error} />
+    </>
+  );
+}
+```
+
+`EvidenceViewer` is available from `../components/EvidenceViewer.jsx`; the page components already render it with their verified evidence IDs.
